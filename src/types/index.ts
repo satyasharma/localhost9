@@ -16,7 +16,8 @@ export interface CartItem extends Dish {
 export interface UserProfile {
   id: string;
   name: string;
-  phone: string;
+  email: string;
+  phone: string | null;
   created_at: string;
 }
 

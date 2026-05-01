@@ -1,24 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import { Phone, ArrowRight, User } from 'lucide-react';
+import { Mail, ArrowRight, User, Phone } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 interface AuthScreenProps {
   onAuthenticated: () => void;
 }
 
-type Step = 'phone' | 'otp' | 'name';
+type Step = 'email' | 'otp' | 'profile';
 
 export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
-  const [step, setStep] = useState<Step>('phone');
-  const [phone, setPhone] = useState('');
+  const [step, setStep] = useState<Step>('email');
+  const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const fullPhone = phone.startsWith('+') ? phone : `+91${phone}`;
 
   const sendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +25,7 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithOtp({ phone: fullPhone });
+      const { error } = await supabase.auth.signInWithOtp({ email });
       if (error) throw error;
       setStep('otp');
     } catch (err: any) {
@@ -43,16 +42,16 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
 
     try {
       const { data, error } = await supabase.auth.verifyOtp({
-        phone: fullPhone,
+        email,
         token: otp,
-        type: 'sms',
+        type: 'email',
       });
       if (error) throw error;
 
-      // Check if user profile exists
       const userId = data.user?.id;
       if (!userId) throw new Error('Authentication failed');
 
+      // Check if user profile exists
       const { data: profile } = await supabase
         .from('users')
         .select('id')
@@ -60,11 +59,9 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
         .maybeSingle();
 
       if (profile) {
-        // Existing user — go to main page
         onAuthenticated();
       } else {
-        // New user — ask for name
-        setStep('name');
+        setStep('profile');
       }
     } catch (err: any) {
       setError(err.message || 'Invalid OTP');
@@ -73,7 +70,7 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
     }
   };
 
-  const saveName = async (e: React.FormEvent) => {
+  const saveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -84,7 +81,12 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
 
       const { error } = await supabase
         .from('users')
-        .insert([{ id: user.id, name, phone: fullPhone }]);
+        .insert([{
+          id: user.id,
+          name,
+          email,
+          phone: phone || null,
+        }]);
 
       if (error) throw error;
       onAuthenticated();
@@ -104,36 +106,32 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
           <p className="text-sm text-gray-500 mt-1">Root Access to Great Taste</p>
         </div>
 
-        {/* Phone Step */}
-        {step === 'phone' && (
+        {/* Email Step */}
+        {step === 'email' && (
           <form onSubmit={sendOtp} className="space-y-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                <Phone size={16} className="inline mr-2" />
-                Phone Number
+                <Mail size={16} className="inline mr-2" />
+                Email Address
               </label>
-              <div className="flex gap-2">
-                <span className="flex items-center px-3 bg-gray-100 rounded-lg text-gray-600 text-sm font-medium">+91</span>
-                <input
-                  type="tel"
-                  required
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="Enter 10-digit number"
-                  maxLength={10}
-                />
-              </div>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                placeholder="you@example.com"
+              />
             </div>
 
             {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <button
               type="submit"
-              disabled={loading || phone.length < 10}
+              disabled={loading || !email}
               className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
             >
-              {loading ? 'Sending OTP...' : <>Send OTP <ArrowRight size={18} /></>}
+              {loading ? 'Sending code...' : <>Send Login Code <ArrowRight size={18} /></>}
             </button>
           </form>
         )}
@@ -142,7 +140,7 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
         {step === 'otp' && (
           <form onSubmit={verifyOtp} className="space-y-4">
             <p className="text-sm text-gray-600 text-center">
-              Enter the 6-digit code sent to <strong>{fullPhone}</strong>
+              Enter the 6-digit code sent to <strong>{email}</strong>
             </p>
             <input
               type="text"
@@ -161,23 +159,24 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
               disabled={loading || otp.length < 6}
               className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white py-3 rounded-lg font-semibold transition-colors"
             >
-              {loading ? 'Verifying...' : 'Verify OTP'}
+              {loading ? 'Verifying...' : 'Verify Code'}
             </button>
 
             <button
               type="button"
-              onClick={() => { setStep('phone'); setOtp(''); setError(''); }}
+              onClick={() => { setStep('email'); setOtp(''); setError(''); }}
               className="w-full text-sm text-orange-500 font-semibold hover:underline"
             >
-              Change phone number
+              Change email
             </button>
           </form>
         )}
 
-        {/* Name Step (new user) */}
-        {step === 'name' && (
-          <form onSubmit={saveName} className="space-y-4">
-            <p className="text-sm text-gray-600 text-center">Welcome! What should we call you?</p>
+        {/* Profile Step (new user) */}
+        {step === 'profile' && (
+          <form onSubmit={saveProfile} className="space-y-4">
+            <p className="text-sm text-gray-600 text-center">Welcome! Tell us a bit about yourself.</p>
+
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 <User size={16} className="inline mr-2" />
@@ -193,6 +192,21 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
               />
             </div>
 
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <Phone size={16} className="inline mr-2" />
+                Phone Number <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                placeholder="10-digit number"
+                maxLength={10}
+              />
+            </div>
+
             {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <button
@@ -200,7 +214,7 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
               disabled={loading || !name.trim()}
               className="w-full bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white py-3 rounded-lg font-semibold transition-colors"
             >
-              {loading ? 'Saving...' : 'Continue'}
+              {loading ? 'Saving...' : 'Start Ordering'}
             </button>
           </form>
         )}
