@@ -1,28 +1,70 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ShoppingBag, UtensilsCrossed } from 'lucide-react';
+import { ShoppingBag, UtensilsCrossed, Menu as MenuIcon } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { Dish, CartItem } from '@/types';
+import { Dish, CartItem, UserProfile } from '@/types';
+import AuthScreen from '@/components/AuthScreen';
+import Sidebar from '@/components/Sidebar';
 import Menu from '@/components/Menu';
 import Cart from '@/components/Cart';
 import OrderForm from '@/components/OrderForm';
 import OrderConfirmation from '@/components/OrderConfirmation';
 
-
 export default function Home() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [dishes, setDishes] = useState<Dish[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isOrderFormOpen, setIsOrderFormOpen] = useState(false);
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
-  const [orderId, setOrderId] = useState('');
   const [displayOrderId, setDisplayOrderId] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
+  // Check auth state on mount
   useEffect(() => {
-    fetchDishes();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        loadProfile(session.user.id);
+      } else {
+        setIsAuthenticated(false);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        loadProfile(session.user.id);
+      } else {
+        setIsAuthenticated(false);
+        setProfile(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  // Load dishes when authenticated
+  useEffect(() => {
+    if (isAuthenticated) fetchDishes();
+  }, [isAuthenticated]);
+
+  const loadProfile = async (userId: string) => {
+    const { data } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (data) {
+      setProfile(data);
+      setIsAuthenticated(true);
+    } else {
+      // User exists in auth but not in users table yet (new user flow)
+      setIsAuthenticated(true);
+    }
+  };
 
   const fetchDishes = async () => {
     const { data, error } = await supabase
@@ -31,17 +73,13 @@ export default function Home() {
       .eq('available', true)
       .order('created_at', { ascending: true });
 
-    if (error) {
-      console.error('Error fetching dishes:', error);
-    } else {
-      setDishes(data || []);
-    }
+    if (!error) setDishes(data || []);
     setIsLoading(false);
   };
 
   const addToCart = (dish: Dish) => {
-    const existingItem = cart.find(item => item.id === dish.id);
-    if (existingItem) {
+    const existing = cart.find(item => item.id === dish.id);
+    if (existing) {
       setCart(cart.map(item =>
         item.id === dish.id ? { ...item, quantity: item.quantity + 1 } : item
       ));
@@ -52,7 +90,7 @@ export default function Home() {
 
   const updateQuantity = (dishId: string, quantity: number) => {
     if (quantity <= 0) {
-      removeItem(dishId);
+      setCart(cart.filter(item => item.id !== dishId));
     } else {
       setCart(cart.map(item =>
         item.id === dishId ? { ...item, quantity } : item
@@ -70,163 +108,101 @@ export default function Home() {
   };
 
   const handleSubmitOrder = async (orderData: {
-    customer_name: string;
-    customer_phone: string;
-    customer_address: string;
+    delivery_address: string;
     notes: string;
-    addressNickname?: string;
+    addressLabel?: string;
     paymentMode: 'cod' | 'razorpay';
   }) => {
+    if (!profile) return;
+
     const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+    const summaryText = cart.map(item => `${item.name} ×${item.quantity}`).join(', ');
 
-    // 1. Find or create customer
-    let customerId: string | null = null;
-
-    const { data: existingCustomer } = await supabase
-      .from('customers')
-      .select('id')
-      .eq('phone', orderData.customer_phone)
-      .maybeSingle();
-
-    if (existingCustomer) {
-      customerId = existingCustomer.id;
-    } else {
-      const { data: newCustomer, error: customerError } = await supabase
-        .from('customers')
-        .insert([{ name: orderData.customer_name, phone: orderData.customer_phone }])
-        .select('id')
-        .single();
-
-      if (customerError) {
-        console.error('Error creating customer:', customerError);
-        alert('Failed to place order. Please try again.');
-        return;
-      }
-      customerId = newCustomer.id;
+    // Save new address if label provided
+    if (orderData.addressLabel?.trim()) {
+      await supabase.from('user_addresses').insert([{
+        user_id: profile.id,
+        label: orderData.addressLabel,
+        full_address: orderData.delivery_address,
+      }]);
     }
 
-    if (!customerId) {
-      alert('Failed to create customer record. Please try again.');
-      return;
-    }
+    // Generate order ID: last 2 chars of user ID (uppercase) + random 5 digits
+    const prefix = profile.id.slice(-2).toUpperCase();
+    const random = Math.floor(10000 + Math.random() * 90000);
+    const generatedDisplayId = `${prefix}${random}`;
 
-    // 2. Save address if nickname provided
-    if (orderData.addressNickname?.trim()) {
-      await supabase
-        .from('customer_addresses')
-        .insert([{
-          customer_id: customerId,
-          nickname: orderData.addressNickname,
-          full_address: orderData.customer_address,
-        }]);
-    }
-
-    // 3. Generate display order ID (prefix from customer ID + random 5 digits)
-    let generatedDisplayId = '';
-    try {
-      const res = await fetch('/api/generate-order-id', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customerId }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      generatedDisplayId = data.displayOrderId;
-    } catch (error) {
-      console.error('Error generating display ID:', error);
-      alert('Failed to generate order ID. Please try again.');
-      return;
-    }
-
-    // 4. Handle payment
-    if (orderData.paymentMode === 'razorpay') {
-      try {
-        const payRes = await fetch('/api/create-payment', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            amount: total,
-            orderId: generatedDisplayId,
-            customerName: orderData.customer_name,
-            customerPhone: orderData.customer_phone,
-          }),
-        });
-        const payData = await payRes.json();
-
-        if (payData.mode === 'razorpay') {
-          // Open Razorpay checkout
-          const paid = await openRazorpayCheckout({
-            keyId: payData.keyId,
-            amount: payData.amount,
-            currency: payData.currency,
-            razorpayOrderId: payData.razorpayOrderId,
-            customerName: orderData.customer_name,
-            customerPhone: orderData.customer_phone,
-          });
-
-          if (!paid) {
-            alert('Payment was cancelled or failed.');
-            return;
-          }
-        }
-        // If mode is 'cod', Razorpay not configured — proceed as COD
-      } catch (error) {
-        console.error('Payment error:', error);
-        alert('Payment failed. Please try again.');
-        return;
-      }
-    }
-
-    // 5. Create order in database
-    const newOrderId = crypto.randomUUID();
-
-    const { error: orderError } = await supabase
+    // Create order
+    const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert([{
-        id: newOrderId,
-        customer_id: customerId,
         display_order_id: generatedDisplayId,
-        customer_name: orderData.customer_name,
-        customer_phone: orderData.customer_phone,
-        customer_address: orderData.customer_address,
-        notes: orderData.notes,
+        user_id: profile.id,
+        phone: profile.phone,
+        delivery_address: orderData.delivery_address,
         total_amount: total,
+        item_count: itemCount,
+        summary_text: summaryText,
         status: orderData.paymentMode === 'razorpay' ? 'paid' : 'pending',
-      }]);
+        notes: orderData.notes,
+      }])
+      .select('id')
+      .single();
 
     if (orderError) {
-      console.error('Error creating order:', orderError);
+      console.error('Order error:', orderError);
       alert('Failed to place order. Please try again.');
       return;
     }
 
+    // Create order items
     const orderItems = cart.map(item => ({
-      order_id: newOrderId,
+      order_id: order.id,
       dish_id: item.id,
+      dish_name: item.name,
       quantity: item.quantity,
       price: item.price,
     }));
 
-    const { error: itemsError } = await supabase
-      .from('order_items')
-      .insert(orderItems);
+    await supabase.from('order_items').insert(orderItems);
 
-    if (itemsError) {
-      console.error('Error creating order items:', itemsError);
-    }
-
-    setOrderId(newOrderId);
     setDisplayOrderId(generatedDisplayId);
     setIsOrderFormOpen(false);
     setIsConfirmationOpen(true);
     setCart([]);
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setIsAuthenticated(false);
+    setProfile(null);
+    setCart([]);
+    setIsSidebarOpen(false);
+  };
+
   const handleCloseConfirmation = () => {
     setIsConfirmationOpen(false);
-    setOrderId('');
     setDisplayOrderId('');
   };
+
+  // Loading state
+  if (isAuthenticated === null) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500" />
+      </div>
+    );
+  }
+
+  // Auth screen
+  if (!isAuthenticated) {
+    return <AuthScreen onAuthenticated={() => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) loadProfile(session.user.id);
+      });
+    }} />;
+  }
 
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -237,10 +213,17 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <UtensilsCrossed size={32} className="text-orange-500" />
+              <button
+                onClick={() => setIsSidebarOpen(true)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="Open menu"
+              >
+                <MenuIcon size={24} className="text-gray-700" />
+              </button>
+              <UtensilsCrossed size={28} className="text-orange-500" />
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">localHost9</h1>
-                <p className="text-xs sm:text-sm text-gray-600">Your Daily Favorites, Delivered Fresh</p>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-800">localHost9</h1>
+                <p className="text-xs text-gray-500 hidden sm:block">Your Daily Favorites, Delivered Fresh</p>
               </div>
             </div>
             <button
@@ -275,7 +258,15 @@ export default function Home() {
         )}
       </main>
 
-      {/* Modals */}
+      {/* Sidebar */}
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        profile={profile}
+        onLogout={handleLogout}
+      />
+
+      {/* Cart */}
       <Cart
         cart={cart}
         isOpen={isCartOpen}
@@ -285,16 +276,19 @@ export default function Home() {
         onCheckout={handleCheckout}
       />
 
+      {/* Order Form */}
       <OrderForm
         isOpen={isOrderFormOpen}
         onClose={() => setIsOrderFormOpen(false)}
         cart={cart}
+        profile={profile}
         onSubmitOrder={handleSubmitOrder}
       />
 
+      {/* Confirmation */}
       <OrderConfirmation
         isOpen={isConfirmationOpen}
-        orderId={orderId}
+        orderId=""
         displayOrderId={displayOrderId}
         onClose={handleCloseConfirmation}
       />
@@ -308,61 +302,4 @@ export default function Home() {
       </footer>
     </div>
   );
-}
-
-// Razorpay checkout helper
-function openRazorpayCheckout(opts: {
-  keyId: string;
-  amount: number;
-  currency: string;
-  razorpayOrderId: string;
-  customerName: string;
-  customerPhone: string;
-}): Promise<boolean> {
-  return new Promise((resolve) => {
-    // Load Razorpay script if not already loaded
-    if (!(window as any).Razorpay) {
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.onload = () => doOpen();
-      script.onerror = () => resolve(false);
-      document.head.appendChild(script);
-    } else {
-      doOpen();
-    }
-
-    function doOpen() {
-      const rzp = new (window as any).Razorpay({
-        key: opts.keyId,
-        amount: opts.amount,
-        currency: opts.currency,
-        name: 'localHost9',
-        description: 'Food Order',
-        order_id: opts.razorpayOrderId,
-        prefill: {
-          name: opts.customerName,
-          contact: opts.customerPhone,
-        },
-        theme: { color: '#f97316' },
-        handler: async function (response: any) {
-          // Verify payment on server
-          try {
-            const verifyRes = await fetch('/api/verify-payment', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(response),
-            });
-            const verifyData = await verifyRes.json();
-            resolve(verifyData.verified === true);
-          } catch {
-            resolve(false);
-          }
-        },
-        modal: {
-          ondismiss: () => resolve(false),
-        },
-      });
-      rzp.open();
-    }
-  });
 }
