@@ -8,7 +8,7 @@ import Menu from '@/components/Menu';
 import Cart from '@/components/Cart';
 import OrderForm from '@/components/OrderForm';
 import OrderConfirmation from '@/components/OrderConfirmation';
-import WhatsAppButton from '@/components/WhatsAppButton';
+
 
 export default function Home() {
   const [dishes, setDishes] = useState<Dish[]>([]);
@@ -298,9 +298,6 @@ export default function Home() {
         displayOrderId={displayOrderId}
         onClose={handleCloseConfirmation}
       />
-
-      {/* WhatsApp floating button */}
-      <WhatsAppButton />
 
       {/* Footer */}
       <footer className="bg-gray-800 text-white py-8 mt-16">
