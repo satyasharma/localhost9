@@ -139,7 +139,7 @@ export default function Home() {
       .insert([{
         display_order_id: generatedDisplayId,
         user_id: profile.id,
-        phone: profile.phone || '',
+        phone: profile.phone,
         delivery_address: orderData.delivery_address,
         total_amount: total,
         item_count: itemCount,

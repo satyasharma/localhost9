@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, User, Mail, Phone, Clock, LogOut, ChevronRight } from 'lucide-react';
+import { X, User, Phone, Clock, LogOut, ChevronRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { UserProfile } from '@/types';
 
@@ -84,15 +84,9 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
                 <span className="font-semibold text-lg">{profile.name}</span>
               </div>
               <div className="flex items-center gap-2 text-orange-100">
-                <Mail size={16} />
-                <span className="text-sm">{profile.email}</span>
+                <Phone size={16} />
+                <span className="text-sm">{profile.phone}</span>
               </div>
-              {profile.phone && (
-                <div className="flex items-center gap-2 text-orange-100">
-                  <Phone size={16} />
-                  <span className="text-sm">{profile.phone}</span>
-                </div>
-              )}
             </div>
           )}
         </div>
