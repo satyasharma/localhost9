@@ -1,15 +1,102 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+
+declare global {
+  interface Window {
+    google?: any;
+  }
+}
+
+function generateNonce(): string {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function hashNonce(nonce: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(nonce);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
 
 export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [nonce, setNonce] = useState('');
+  const [googleReady, setGoogleReady] = useState(false);
 
-  const handleSignIn = async () => {
+  useEffect(() => {
+    const rawNonce = generateNonce();
+    setNonce(rawNonce);
+
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = async () => {
+      if (window.google) {
+        const hashedNonce = await hashNonce(rawNonce);
+        window.google.accounts.id.initialize({
+          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+          callback: (response: any) => handleIdToken(response, rawNonce),
+          nonce: hashedNonce,
+          use_fedcm_for_prompt: true,
+        });
+        setGoogleReady(true);
+      }
+    };
+    document.head.appendChild(script);
+    return () => { document.head.removeChild(script); };
+  }, []);
+
+  const handleIdToken = async (response: any, rawNonce: string) => {
     setLoading(true);
     setError('');
+    try {
+      const { error } = await supabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: response.credential,
+        nonce: rawNonce,
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setError(err.message || 'Failed to sign in');
+      setLoading(false);
+    }
+  };
+
+  const handleClick = () => {
+    if (loading) return;
+
+    // Try the nice One Tap / popup first
+    if (googleReady && window.google) {
+      // Set a timeout — if prompt doesn't show in 2 seconds, fall back to redirect
+      let promptShown = false;
+
+      window.google.accounts.id.prompt((notification: any) => {
+        promptShown = true;
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          // Popup didn't show — fall back to redirect
+          fallbackToRedirect();
+        }
+      });
+
+      // Safety fallback if prompt callback never fires
+      setTimeout(() => {
+        if (!promptShown) {
+          fallbackToRedirect();
+        }
+      }, 2000);
+    } else {
+      fallbackToRedirect();
+    }
+  };
+
+  const fallbackToRedirect = async () => {
+    setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -35,7 +122,7 @@ export default function AuthScreen() {
         {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
 
         <button
-          onClick={handleSignIn}
+          onClick={handleClick}
           disabled={loading}
           className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 hover:bg-gray-50 py-3 px-4 rounded-lg font-medium text-gray-700 transition-colors disabled:opacity-50"
         >
