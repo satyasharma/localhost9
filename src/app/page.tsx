@@ -58,20 +58,12 @@ export default function Home() {
     setUserName(user.user_metadata?.full_name || user.user_metadata?.name || '');
     setUserEmail(user.email || '');
 
-    // Check if profile exists (retry once if RLS hasn't caught up)
-    let existingProfile = null;
-    for (let i = 0; i < 2; i++) {
-      const { data } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-      if (data) {
-        existingProfile = data;
-        break;
-      }
-      if (i === 0) await new Promise(r => setTimeout(r, 500));
-    }
+    // Check if profile exists
+    const { data: existingProfile } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle();
 
     if (existingProfile) {
       setProfile(existingProfile);
