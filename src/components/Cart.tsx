@@ -53,7 +53,7 @@ export default function Cart({ cart, isOpen, onClose, onUpdateQuantity, onRemove
                   </div>
                   <div className="flex-1">
                     <h3 className="font-semibold text-gray-800">{item.name}</h3>
-                    <p className="text-green-600 font-bold">₹{item.price.toFixed(2)}</p>
+                    <p className="text-green-600 font-bold">₹{item.price % 1 === 0 ? item.price.toFixed(0) : item.price.toFixed(2)}</p>
                     <div className="flex items-center gap-2 mt-2">
                       <button
                         onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
@@ -86,7 +86,7 @@ export default function Cart({ cart, isOpen, onClose, onUpdateQuantity, onRemove
             <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 space-y-4">
               <div className="flex justify-between items-center text-xl font-bold">
                 <span>Total:</span>
-                <span className="text-green-600">₹{total.toFixed(2)}</span>
+                <span className="text-green-600">₹{total % 1 === 0 ? total.toFixed(0) : total.toFixed(2)}</span>
               </div>
               <button
                 onClick={onCheckout}

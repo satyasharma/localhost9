@@ -38,7 +38,7 @@ export default function Menu({ dishes, cart, onAddToCart, onUpdateQuantity }: Me
               <h3 className="text-xl font-bold text-gray-800 mb-2">{dish.name}</h3>
               <p className="text-gray-600 text-sm mb-4 line-clamp-2">{dish.description}</p>
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold text-green-600">₹{dish.price.toFixed(2)}</span>
+                <span className="text-2xl font-bold text-green-600">₹{dish.price % 1 === 0 ? dish.price.toFixed(0) : dish.price.toFixed(2)}</span>
                 {quantity === 0 ? (
                   <button
                     onClick={() => onAddToCart(dish)}

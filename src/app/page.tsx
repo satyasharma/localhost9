@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ShoppingBag, UtensilsCrossed, Menu as MenuIcon } from 'lucide-react';
+import { ShoppingBag, UtensilsCrossed } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Dish, CartItem, UserProfile } from '@/types';
 import AuthScreen from '@/components/AuthScreen';
@@ -230,10 +230,10 @@ export default function Home() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setIsSidebarOpen(true)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="w-9 h-9 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold text-sm hover:bg-orange-600 transition-colors"
                 aria-label="Open menu"
               >
-                <MenuIcon size={24} className="text-gray-700" />
+                {profile?.name?.charAt(0).toUpperCase() || 'U'}
               </button>
               <UtensilsCrossed size={28} className="text-orange-500" />
               <div>

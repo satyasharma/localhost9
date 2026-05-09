@@ -107,12 +107,12 @@ export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrde
               {cart.map((item) => (
                 <div key={item.id} className="flex justify-between">
                   <span>{item.name} × {item.quantity}</span>
-                  <span className="font-semibold">₹{(item.price * item.quantity).toFixed(2)}</span>
+                  <span className="font-semibold">₹{(item.price * item.quantity) % 1 === 0 ? (item.price * item.quantity).toFixed(0) : (item.price * item.quantity).toFixed(2)}</span>
                 </div>
               ))}
               <div className="border-t pt-2 mt-2 flex justify-between text-lg font-bold">
                 <span>Total:</span>
-                <span className="text-green-600">₹{total.toFixed(2)}</span>
+                <span className="text-green-600">₹{total % 1 === 0 ? total.toFixed(0) : total.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -234,7 +234,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrde
               disabled={isSubmitting || !address.trim() || phone.length !== 10}
               className="w-full bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white py-4 rounded-lg font-bold text-lg transition-colors shadow-lg"
             >
-              {isSubmitting ? 'Placing Order...' : `Place Order — ₹${total.toFixed(2)}`}
+              {isSubmitting ? 'Placing Order...' : `Place Order — ₹${total % 1 === 0 ? total.toFixed(0) : total.toFixed(2)}`}
             </button>
           </form>
         </div>
