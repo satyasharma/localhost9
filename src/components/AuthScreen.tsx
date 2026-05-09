@@ -9,43 +9,65 @@ declare global {
   }
 }
 
+// Generate a random nonce
+function generateNonce(): string {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+// Hash nonce with SHA-256 for Google
+async function hashNonce(nonce: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(nonce);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
 export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [scriptLoaded, setScriptLoaded] = useState(false);
-
-  const handleGoogleResponse = useCallback(async (response: any) => {
-    setLoading(true);
-    setError('');
-    try {
-      const { error } = await supabase.auth.signInWithIdToken({
-        provider: 'google',
-        token: response.credential,
-      });
-      if (error) throw error;
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign in');
-      setLoading(false);
-    }
-  }, []);
+  const [nonce, setNonce] = useState('');
 
   useEffect(() => {
+    const rawNonce = generateNonce();
+    setNonce(rawNonce);
+
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';
     script.async = true;
     script.defer = true;
-    script.onload = () => {
+    script.onload = async () => {
       if (window.google) {
+        const hashedNonce = await hashNonce(rawNonce);
         window.google.accounts.id.initialize({
           client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-          callback: handleGoogleResponse,
+          callback: (response: any) => handleGoogleResponse(response, rawNonce),
+          nonce: hashedNonce,
         });
         setScriptLoaded(true);
       }
     };
     document.head.appendChild(script);
     return () => { document.head.removeChild(script); };
-  }, [handleGoogleResponse]);
+  }, []);
+
+  const handleGoogleResponse = async (response: any, rawNonce: string) => {
+    setLoading(true);
+    setError('');
+    try {
+      const { error } = await supabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: response.credential,
+        nonce: rawNonce,
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setError(err.message || 'Failed to sign in');
+      setLoading(false);
+    }
+  };
 
   const handleClick = () => {
     if (!window.google || loading) return;
