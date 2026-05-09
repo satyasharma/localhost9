@@ -174,14 +174,7 @@ export default function Home() {
         ) : (
           <>
             <Menu dishes={dishes} cart={cart} onAddToCart={addToCart} onUpdateQuantity={updateQuantity} />
-            
-            {/* Coming Soon */}
-            <div className="mt-16 text-center">
-              <div className="inline-block bg-white rounded-2xl shadow-md px-8 py-6">
-                <p className="text-2xl font-bold text-gray-700 mb-2">🍽️ Many more items coming soon!</p>
-                <p className="text-gray-500">We&apos;re cooking up new dishes for you. Stay tuned.</p>
-              </div>
-            </div>
+            <p className="text-center text-gray-400 mt-12 text-lg">Many more items coming soon ✨</p>
           </>
         )}
       </main>

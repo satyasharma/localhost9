@@ -22,6 +22,7 @@ export default function OrderForm({ isOpen, onClose, cart, onSubmitOrder }: Orde
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [phoneError, setPhoneError] = useState('');
 
   // Auto-fill from localStorage on open
   useEffect(() => {
@@ -40,8 +41,22 @@ export default function OrderForm({ isOpen, onClose, cart, onSubmitOrder }: Orde
 
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
+  const handlePhoneChange = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 10);
+    setPhone(digits);
+    if (digits.length > 0 && digits.length < 10) {
+      setPhoneError('Phone number must be 10 digits');
+    } else {
+      setPhoneError('');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (phone.length !== 10) {
+      setPhoneError('Phone number must be 10 digits');
+      return;
+    }
     setIsSubmitting(true);
     try {
       await onSubmitOrder({ name, phone, address, notes });
@@ -103,14 +118,21 @@ export default function OrderForm({ isOpen, onClose, cart, onSubmitOrder }: Orde
                 <Phone size={16} className="inline mr-2" />
                 Phone Number
               </label>
-              <input
-                type="tel"
-                required
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                placeholder="Enter your phone number"
-              />
+              <div className="flex gap-2">
+                <span className="flex items-center px-3 bg-gray-100 rounded-lg text-gray-600 text-sm font-medium">+91</span>
+                <input
+                  type="tel"
+                  required
+                  value={phone}
+                  onChange={(e) => handlePhoneChange(e.target.value)}
+                  className={`flex-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                    phoneError ? 'border-red-400' : 'border-gray-300'
+                  }`}
+                  placeholder="10-digit number"
+                  maxLength={10}
+                />
+              </div>
+              {phoneError && <p className="text-red-500 text-xs mt-1">{phoneError}</p>}
             </div>
 
             {/* Address */}
@@ -147,7 +169,7 @@ export default function OrderForm({ isOpen, onClose, cart, onSubmitOrder }: Orde
             {/* Submit */}
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || phone.length !== 10}
               className="w-full bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white py-4 rounded-lg font-bold text-lg transition-colors shadow-lg"
             >
               {isSubmitting ? 'Placing Order...' : `Place Order — ₹${total.toFixed(2)}`}
