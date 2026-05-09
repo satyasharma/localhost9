@@ -234,7 +234,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrde
               disabled={isSubmitting || !address.trim() || phone.length !== 10}
               className="w-full bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white py-4 rounded-lg font-bold text-lg transition-colors shadow-lg"
             >
-              {isSubmitting ? 'Placing Order...' : `Place Order — ₹${total % 1 === 0 ? total.toFixed(0) : total.toFixed(2)}`}
+              {isSubmitting ? 'Placing Order...' : `Place Order - ₹${total % 1 === 0 ? total.toFixed(0) : total.toFixed(2)}`}
             </button>
           </form>
         </div>
