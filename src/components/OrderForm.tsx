@@ -1,65 +1,61 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, MapPin, Phone, User, FileText } from 'lucide-react';
-import { CartItem, SavedCustomerInfo } from '@/types';
+import { X, MapPin, FileText, Plus } from 'lucide-react';
+import { CartItem, UserProfile, UserAddress } from '@/types';
+import { supabase } from '@/lib/supabase';
 
 interface OrderFormProps {
   isOpen: boolean;
   onClose: () => void;
   cart: CartItem[];
+  profile: UserProfile | null;
   onSubmitOrder: (orderData: {
-    name: string;
-    phone: string;
     address: string;
     notes: string;
+    addressLabel?: string;
   }) => void;
 }
 
-export default function OrderForm({ isOpen, onClose, cart, onSubmitOrder }: OrderFormProps) {
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrder }: OrderFormProps) {
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
+  const [addressLabel, setAddressLabel] = useState('');
+  const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState('');
+  const [showNewAddress, setShowNewAddress] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [phoneError, setPhoneError] = useState('');
 
-  // Auto-fill from localStorage on open
   useEffect(() => {
-    if (isOpen) {
-      try {
-        const saved = localStorage.getItem('localhost9_customer');
-        if (saved) {
-          const info: SavedCustomerInfo = JSON.parse(saved);
-          setName(info.name || '');
-          setPhone(info.phone || '');
-          setAddress(info.address || '');
-        }
-      } catch {}
+    if (isOpen && profile) {
+      loadAddresses();
     }
-  }, [isOpen]);
+  }, [isOpen, profile]);
+
+  const loadAddresses = async () => {
+    if (!profile) return;
+    const { data } = await supabase
+      .from('user_addresses')
+      .select('*')
+      .eq('user_id', profile.id);
+    const addrs = data || [];
+    setSavedAddresses(addrs);
+    setShowNewAddress(addrs.length === 0);
+  };
+
+  const handleSelectAddress = (addr: UserAddress) => {
+    setSelectedAddressId(addr.id);
+    setAddress(addr.full_address);
+    setShowNewAddress(false);
+  };
 
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  const handlePhoneChange = (value: string) => {
-    const digits = value.replace(/\D/g, '').slice(0, 10);
-    setPhone(digits);
-    if (digits.length > 0 && digits.length < 10) {
-      setPhoneError('Phone number must be 10 digits');
-    } else {
-      setPhoneError('');
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (phone.length !== 10) {
-      setPhoneError('Phone number must be 10 digits');
-      return;
-    }
     setIsSubmitting(true);
     try {
-      await onSubmitOrder({ name, phone, address, notes });
+      await onSubmitOrder({ address, notes, addressLabel: addressLabel || undefined });
     } finally {
       setIsSubmitting(false);
     }
@@ -96,59 +92,73 @@ export default function OrderForm({ isOpen, onClose, cart, onSubmitOrder }: Orde
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Name */}
+            {/* Delivery Address */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                <User size={16} className="inline mr-2" />
-                Full Name
-              </label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                placeholder="Enter your name"
-              />
-            </div>
-
-            {/* Phone */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                <Phone size={16} className="inline mr-2" />
-                Phone Number
-              </label>
-              <div className="flex gap-2">
-                <span className="flex items-center px-3 bg-gray-100 rounded-lg text-gray-600 text-sm font-medium">+91</span>
-                <input
-                  type="tel"
-                  required
-                  value={phone}
-                  onChange={(e) => handlePhoneChange(e.target.value)}
-                  className={`flex-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                    phoneError ? 'border-red-400' : 'border-gray-300'
-                  }`}
-                  placeholder="10-digit number"
-                  maxLength={10}
-                />
-              </div>
-              {phoneError && <p className="text-red-500 text-xs mt-1">{phoneError}</p>}
-            </div>
-
-            {/* Address */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
                 <MapPin size={16} className="inline mr-2" />
                 Delivery Address
               </label>
-              <textarea
-                required
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                placeholder="Enter your complete delivery address"
-                rows={3}
-              />
+
+              {savedAddresses.length > 0 && !showNewAddress && (
+                <div className="mb-4">
+                  <div className="space-y-2 mb-3">
+                    {savedAddresses.map((addr) => (
+                      <button
+                        key={addr.id}
+                        type="button"
+                        onClick={() => handleSelectAddress(addr)}
+                        className={`w-full text-left p-3 rounded-lg border-2 transition-all ${
+                          selectedAddressId === addr.id
+                            ? 'border-orange-500 bg-orange-50'
+                            : 'border-gray-300 hover:border-gray-400 bg-white'
+                        }`}
+                      >
+                        <div className="font-semibold text-gray-800">{addr.label}</div>
+                        <div className="text-sm text-gray-600">{addr.full_address}</div>
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setShowNewAddress(true); setSelectedAddressId(''); setAddress(''); }}
+                    className="w-full py-2 px-4 border border-orange-500 text-orange-500 rounded-lg hover:bg-orange-50 font-semibold flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <Plus size={18} />
+                    Add New Address
+                  </button>
+                </div>
+              )}
+
+              {(showNewAddress || savedAddresses.length === 0) && (
+                <>
+                  <div className="mb-3">
+                    <input
+                      type="text"
+                      value={addressLabel}
+                      onChange={(e) => setAddressLabel(e.target.value)}
+                      placeholder="Label (e.g., Home, Office)"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+                    />
+                  </div>
+                  <textarea
+                    required
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    placeholder="Enter your complete delivery address"
+                    rows={3}
+                  />
+                  {savedAddresses.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowNewAddress(false)}
+                      className="text-sm text-orange-500 font-semibold mt-1 hover:underline"
+                    >
+                      Use saved address instead
+                    </button>
+                  )}
+                </>
+              )}
             </div>
 
             {/* Notes */}
@@ -169,7 +179,7 @@ export default function OrderForm({ isOpen, onClose, cart, onSubmitOrder }: Orde
             {/* Submit */}
             <button
               type="submit"
-              disabled={isSubmitting || phone.length !== 10}
+              disabled={isSubmitting || !address.trim()}
               className="w-full bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white py-4 rounded-lg font-bold text-lg transition-colors shadow-lg"
             >
               {isSubmitting ? 'Placing Order...' : `Place Order — ₹${total.toFixed(2)}`}
