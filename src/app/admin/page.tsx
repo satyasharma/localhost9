@@ -127,17 +127,10 @@ export default function AdminPage() {
     );
   }
 
-  // Not admin
+  // Not admin — redirect to home silently
   if (!isAdmin) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl shadow-lg p-8 text-center max-w-sm">
-          <p className="text-xl font-bold text-gray-800 mb-2">Access Denied</p>
-          <p className="text-gray-500 mb-4">You don't have admin access.</p>
-          <a href="/" className="text-orange-500 font-semibold hover:underline">← Back to menu</a>
-        </div>
-      </div>
-    );
+    if (typeof window !== 'undefined') window.location.href = '/';
+    return null;
   }
 
   return (
