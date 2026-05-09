@@ -29,6 +29,7 @@ export default function AuthScreen() {
   const [signingIn, setSigningIn] = useState(false);
   const nonceRef = useRef<string>('');
   const hiddenBtnRef = useRef<HTMLDivElement>(null);
+  const scriptLoadedRef = useRef(false);
 
   useEffect(() => {
     const rawNonce = generateNonce();
@@ -57,6 +58,7 @@ export default function AuthScreen() {
       script.async = true;
       script.defer = true;
       script.onload = () => {
+        scriptLoadedRef.current = true;
         if (window.google && hiddenBtnRef.current) {
           window.google.accounts.id.initialize({
             client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
@@ -64,18 +66,26 @@ export default function AuthScreen() {
             nonce: hashedNonce,
             use_fedcm_for_prompt: true,
           });
-          // Render hidden Google button (needed for the popup to work)
           window.google.accounts.id.renderButton(hiddenBtnRef.current, {
             type: 'standard',
             size: 'large',
             width: 300,
           });
           setReady(true);
-          // Try One Tap
+          // Try One Tap (works for users already signed into Chrome)
           window.google.accounts.id.prompt();
         }
       };
+      script.onerror = () => {
+        // Script failed to load — enable fallback button
+        setReady(true);
+      };
       document.head.appendChild(script);
+
+      // Timeout: if script hasn't loaded in 5s, enable fallback
+      setTimeout(() => {
+        if (!scriptLoadedRef.current) setReady(true);
+      }, 5000);
     };
 
     loadScript();
@@ -83,10 +93,30 @@ export default function AuthScreen() {
   }, []);
 
   const handleClick = () => {
-    // Click the hidden Google button to trigger the popup
+    if (signingIn) return;
+
+    // Try clicking the hidden Google button first
     const googleBtn = hiddenBtnRef.current?.querySelector('[role="button"]') as HTMLElement;
     if (googleBtn) {
       googleBtn.click();
+      return;
+    }
+
+    // Fallback: use OAuth redirect (works on all devices including iPhone Safari)
+    fallbackRedirect();
+  };
+
+  const fallbackRedirect = async () => {
+    setSigningIn(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) {
+      setError(error.message);
+      setSigningIn(false);
     }
   };
 
@@ -104,12 +134,22 @@ export default function AuthScreen() {
           </div>
         ) : (
           <>
-            {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
+            {error && (
+              <div className="mb-4">
+                <p className="text-red-500 text-sm text-center mb-2">{error}</p>
+                <button
+                  onClick={fallbackRedirect}
+                  className="w-full text-sm text-orange-500 font-semibold hover:underline"
+                >
+                  Try another way
+                </button>
+              </div>
+            )}
 
-            {/* Hidden Google button (needed for auth to work) */}
+            {/* Hidden Google button */}
             <div ref={hiddenBtnRef} className="hidden" />
 
-            {/* Our clean custom button */}
+            {/* Our clean button */}
             <button
               onClick={handleClick}
               disabled={!ready}

@@ -33,11 +33,11 @@ export default function Home() {
       }
     });
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
+    // Listen for auth changes (new sign-in or sign-out)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
         signedIn(session.user);
-      } else {
+      } else if (event === 'SIGNED_OUT') {
         setIsAuthenticated(false);
         setProfile(null);
       }
@@ -47,6 +47,9 @@ export default function Home() {
   }, []);
 
   const signedIn = (user: any) => {
+    // Prevent double-processing
+    if (isAuthenticated) return;
+
     // Build profile from Google metadata — no DB call needed
     const p: UserProfile = {
       id: user.id,
