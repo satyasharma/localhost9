@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, MapPin, FileText, Plus } from 'lucide-react';
+import { X, MapPin, Phone, FileText, Plus } from 'lucide-react';
 import { CartItem, UserProfile, UserAddress } from '@/types';
 import { supabase } from '@/lib/supabase';
 
@@ -12,6 +12,7 @@ interface OrderFormProps {
   profile: UserProfile | null;
   onSubmitOrder: (orderData: {
     address: string;
+    phone: string;
     notes: string;
     addressLabel?: string;
   }) => void;
@@ -19,16 +20,22 @@ interface OrderFormProps {
 
 export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrder }: OrderFormProps) {
   const [address, setAddress] = useState('');
+  const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
   const [addressLabel, setAddressLabel] = useState('');
   const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState('');
   const [showNewAddress, setShowNewAddress] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [phoneError, setPhoneError] = useState('');
 
   useEffect(() => {
     if (isOpen && profile) {
       loadAddresses();
+      // Pre-fill phone from profile if available
+      if (profile.phone) {
+        setPhone(profile.phone.replace('+91', ''));
+      }
     }
   }, [isOpen, profile]);
 
@@ -46,16 +53,35 @@ export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrde
   const handleSelectAddress = (addr: UserAddress) => {
     setSelectedAddressId(addr.id);
     setAddress(addr.full_address);
+    // Auto-fill phone from the saved address
+    if (addr.phone) {
+      setPhone(addr.phone.replace('+91', ''));
+    }
     setShowNewAddress(false);
+  };
+
+  const handlePhoneChange = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 10);
+    setPhone(digits);
+    setPhoneError(digits.length > 0 && digits.length < 10 ? 'Phone must be 10 digits' : '');
   };
 
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (phone.length !== 10) {
+      setPhoneError('Phone must be 10 digits');
+      return;
+    }
     setIsSubmitting(true);
     try {
-      await onSubmitOrder({ address, notes, addressLabel: addressLabel || undefined });
+      await onSubmitOrder({
+        address,
+        phone: `+91${phone}`,
+        notes,
+        addressLabel: addressLabel || undefined,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -115,12 +141,15 @@ export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrde
                       >
                         <div className="font-semibold text-gray-800">{addr.label}</div>
                         <div className="text-sm text-gray-600">{addr.full_address}</div>
+                        {addr.phone && (
+                          <div className="text-xs text-gray-400 mt-1">📞 {addr.phone}</div>
+                        )}
                       </button>
                     ))}
                   </div>
                   <button
                     type="button"
-                    onClick={() => { setShowNewAddress(true); setSelectedAddressId(''); setAddress(''); }}
+                    onClick={() => { setShowNewAddress(true); setSelectedAddressId(''); setAddress(''); setAddressLabel(''); }}
                     className="w-full py-2 px-4 border border-orange-500 text-orange-500 rounded-lg hover:bg-orange-50 font-semibold flex items-center justify-center gap-2 transition-colors"
                   >
                     <Plus size={18} />
@@ -161,6 +190,29 @@ export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrde
               )}
             </div>
 
+            {/* Phone for this delivery */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <Phone size={16} className="inline mr-2" />
+                Contact Number (for delivery)
+              </label>
+              <div className="flex gap-2">
+                <span className="flex items-center px-3 bg-gray-100 rounded-lg text-gray-600 text-sm font-medium">+91</span>
+                <input
+                  type="tel"
+                  required
+                  value={phone}
+                  onChange={(e) => handlePhoneChange(e.target.value)}
+                  className={`flex-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                    phoneError ? 'border-red-400' : 'border-gray-300'
+                  }`}
+                  placeholder="10-digit number"
+                  maxLength={10}
+                />
+              </div>
+              {phoneError && <p className="text-red-500 text-xs mt-1">{phoneError}</p>}
+            </div>
+
             {/* Notes */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -179,7 +231,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrde
             {/* Submit */}
             <button
               type="submit"
-              disabled={isSubmitting || !address.trim()}
+              disabled={isSubmitting || !address.trim() || phone.length !== 10}
               className="w-full bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white py-4 rounded-lg font-bold text-lg transition-colors shadow-lg"
             >
               {isSubmitting ? 'Placing Order...' : `Place Order — ₹${total.toFixed(2)}`}

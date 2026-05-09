@@ -127,6 +127,7 @@ export default function Home() {
 
   const handleSubmitOrder = async (orderData: {
     address: string;
+    phone: string;
     notes: string;
     addressLabel?: string;
   }) => {
@@ -136,12 +137,13 @@ export default function Home() {
     const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
     const summaryText = cart.map(item => `${item.name} ×${item.quantity}`).join(', ');
 
-    // Save new address if label provided
+    // Save new address with phone if label provided
     if (orderData.addressLabel?.trim()) {
       await supabase.from('user_addresses').insert([{
         user_id: profile.id,
         label: orderData.addressLabel,
         full_address: orderData.address,
+        phone: orderData.phone,
       }]);
     }
 
@@ -150,7 +152,7 @@ export default function Home() {
       .from('orders')
       .insert([{
         user_id: profile.id,
-        phone: profile.phone || '',
+        phone: orderData.phone,
         delivery_address: orderData.address,
         total_amount: total,
         item_count: itemCount,

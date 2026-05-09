@@ -26,6 +26,7 @@ export interface UserAddress {
   user_id: string;
   label: string;
   full_address: string;
+  phone: string;
   created_at: string;
 }
 

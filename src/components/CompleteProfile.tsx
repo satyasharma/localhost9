@@ -18,7 +18,7 @@ export default function CompleteProfile({ userId, userName, userEmail, onComplet
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (phone.length !== 10) {
+    if (phone && phone.length !== 10) {
       setError('Phone number must be 10 digits');
       return;
     }
@@ -30,7 +30,7 @@ export default function CompleteProfile({ userId, userName, userEmail, onComplet
         id: userId,
         name: userName,
         email: userEmail,
-        phone: `+91${phone}`,
+        phone: phone ? `+91${phone}` : null,
       }]);
       if (error) throw error;
       onComplete();
@@ -46,20 +46,19 @@ export default function CompleteProfile({ userId, userName, userEmail, onComplet
       <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-8">
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800">Welcome, {userName}!</h1>
-          <p className="text-sm text-gray-500 mt-1">One last thing — your phone number for delivery updates.</p>
+          <p className="text-sm text-gray-500 mt-1">Add your phone number for delivery updates (optional).</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               <Phone size={16} className="inline mr-2" />
-              Phone Number
+              Phone Number <span className="text-gray-400 font-normal">(optional)</span>
             </label>
             <div className="flex gap-2">
               <span className="flex items-center px-3 bg-gray-100 rounded-lg text-gray-600 text-sm font-medium">+91</span>
               <input
                 type="tel"
-                required
                 value={phone}
                 onChange={(e) => {
                   setPhone(e.target.value.replace(/\D/g, '').slice(0, 10));
@@ -75,7 +74,7 @@ export default function CompleteProfile({ userId, userName, userEmail, onComplet
 
           <button
             type="submit"
-            disabled={loading || phone.length !== 10}
+            disabled={loading}
             className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
           >
             {loading ? 'Saving...' : <>Start Ordering <ArrowRight size={18} /></>}
