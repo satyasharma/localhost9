@@ -8,11 +8,31 @@ export default function AuthCallback() {
   const router = useRouter();
 
   useEffect(() => {
-    supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN') {
-        router.push('/');
+    // Supabase automatically picks up the tokens from the URL hash/params
+    // We just need to wait for the session to be established then redirect
+    const handleCallback = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (session) {
+        router.replace('/');
+        return;
       }
-    });
+
+      // If no session yet, listen for the auth state change
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          subscription.unsubscribe();
+          router.replace('/');
+        }
+      });
+
+      // Timeout fallback — if nothing happens in 5s, redirect home anyway
+      setTimeout(() => {
+        router.replace('/');
+      }, 5000);
+    };
+
+    handleCallback();
   }, [router]);
 
   return (
