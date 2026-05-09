@@ -128,7 +128,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrde
 
               {savedAddresses.length > 0 && !showNewAddress && (
                 <div className="mb-4">
-                  <div className="space-y-2 mb-3">
+                  <div className="space-y-2 mb-3 max-h-48 overflow-y-auto">
                     {savedAddresses.map((addr) => (
                       <button
                         key={addr.id}
