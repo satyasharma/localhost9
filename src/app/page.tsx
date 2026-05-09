@@ -173,7 +173,17 @@ export default function Home() {
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500" />
           </div>
         ) : (
-          <Menu dishes={dishes} cart={cart} onAddToCart={addToCart} onUpdateQuantity={updateQuantity} />
+          <>
+            <Menu dishes={dishes} cart={cart} onAddToCart={addToCart} onUpdateQuantity={updateQuantity} />
+            
+            {/* Coming Soon */}
+            <div className="mt-16 text-center">
+              <div className="inline-block bg-white rounded-2xl shadow-md px-8 py-6">
+                <p className="text-2xl font-bold text-gray-700 mb-2">🍽️ Many more items coming soon!</p>
+                <p className="text-gray-500">We&apos;re cooking up new dishes for you. Stay tuned.</p>
+              </div>
+            </div>
+          </>
         )}
       </main>
 
