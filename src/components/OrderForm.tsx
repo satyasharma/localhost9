@@ -53,6 +53,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrde
   const handleSelectAddress = (addr: UserAddress) => {
     setSelectedAddressId(addr.id);
     setAddress(addr.full_address);
+    setAddressLabel(''); // Clear label so we don't create a duplicate
     // Auto-fill phone from the saved address
     if (addr.phone) {
       setPhone(addr.phone.replace('+91', ''));
@@ -80,7 +81,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrde
         address,
         phone: `+91${phone}`,
         notes,
-        addressLabel: addressLabel || undefined,
+        addressLabel: showNewAddress ? (addressLabel || undefined) : undefined,
       });
     } finally {
       setIsSubmitting(false);
