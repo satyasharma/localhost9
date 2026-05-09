@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, User, Phone, Clock, LogOut, ChevronRight, MapPin } from 'lucide-react';
+import { X, User, Phone, Clock, LogOut, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { UserProfile, OrderSummary } from '@/types';
 
@@ -12,21 +12,19 @@ interface SidebarProps {
   onLogout: () => void;
 }
 
-type View = 'menu' | 'orders';
-
 export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarProps) {
-  const [view, setView] = useState<View>('menu');
+  const [showOrders, setShowOrders] = useState(false);
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
 
   useEffect(() => {
-    if (isOpen && view === 'orders' && profile) {
+    if (isOpen && showOrders && profile) {
       fetchOrders();
     }
-  }, [isOpen, view, profile]);
+  }, [isOpen, showOrders, profile]);
 
   useEffect(() => {
-    if (!isOpen) setView('menu');
+    if (!isOpen) setShowOrders(false);
   }, [isOpen]);
 
   const fetchOrders = async () => {
@@ -40,6 +38,10 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
       .limit(20);
     setOrders(data || []);
     setLoadingOrders(false);
+  };
+
+  const toggleOrders = () => {
+    setShowOrders(!showOrders);
   };
 
   const formatDate = (dateStr: string) => {
@@ -89,42 +91,36 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
-          {view === 'menu' && (
-            <div className="p-4 space-y-2">
-              <button
-                onClick={() => setView('orders')}
-                className="w-full flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <Clock size={20} className="text-orange-500" />
-                  <span className="font-semibold">Order History</span>
-                </div>
-                <ChevronRight size={20} className="text-gray-400" />
-              </button>
-            </div>
-          )}
-
-          {view === 'orders' && (
-            <div>
-              <div className="p-4 border-b">
-                <button onClick={() => setView('menu')} className="text-sm text-orange-500 font-semibold hover:underline">
-                  ←
-                </button>
-                <h3 className="text-lg font-bold mt-1">Order History</h3>
+          <div className="p-4">
+            {/* Order History Toggle */}
+            <button
+              onClick={toggleOrders}
+              className="w-full flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Clock size={20} className="text-orange-500" />
+                <span className="font-semibold">Order History</span>
               </div>
-
-              {loadingOrders ? (
-                <div className="flex justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
-                </div>
-              ) : orders.length === 0 ? (
-                <div className="text-center py-12 text-gray-400">
-                  <Clock size={48} className="mx-auto mb-3" />
-                  <p>No orders yet</p>
-                </div>
+              {showOrders ? (
+                <ChevronUp size={20} className="text-gray-400" />
               ) : (
-                <div className="p-4 space-y-3">
-                  {orders.map((order) => (
+                <ChevronDown size={20} className="text-gray-400" />
+              )}
+            </button>
+
+            {/* Orders List (expandable) */}
+            {showOrders && (
+              <div className="mt-2 space-y-3">
+                {loadingOrders ? (
+                  <div className="flex justify-center py-6">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
+                  </div>
+                ) : orders.length === 0 ? (
+                  <div className="text-center py-8 text-gray-400">
+                    <p>No orders yet</p>
+                  </div>
+                ) : (
+                  orders.map((order) => (
                     <div key={order.id} className="bg-gray-50 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-mono font-bold text-orange-600">#{order.display_order_id}</span>
@@ -138,11 +134,11 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
                         <span className="font-bold text-green-600">₹{Number(order.total_amount).toFixed(0)}</span>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+                  ))
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Logout */}
