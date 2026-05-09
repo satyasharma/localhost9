@@ -73,16 +73,10 @@ export default function Home() {
     const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
     const summaryText = cart.map(item => `${item.name} ×${item.quantity}`).join(', ');
 
-    // Generate simple order ID: last 2 chars of phone (uppercase hex-safe) + random 5 digits
-    const prefix = orderData.phone.slice(-2).toUpperCase();
-    const random = Math.floor(10000 + Math.random() * 90000);
-    const generatedDisplayId = `${prefix}${random}`;
-
-    // Save to database
+    // Let database generate sequential order number
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert([{
-        display_order_id: generatedDisplayId,
         user_id: null,
         phone: orderData.phone,
         delivery_address: orderData.address,
@@ -92,7 +86,7 @@ export default function Home() {
         status: 'pending',
         notes: orderData.notes,
       }])
-      .select('id')
+      .select('id, display_order_id')
       .single();
 
     if (orderError) {
@@ -119,7 +113,7 @@ export default function Home() {
       address: orderData.address,
     }));
 
-    setDisplayOrderId(generatedDisplayId);
+    setDisplayOrderId(order.display_order_id);
     setIsOrderFormOpen(false);
     setIsConfirmationOpen(true);
     setCart([]);
