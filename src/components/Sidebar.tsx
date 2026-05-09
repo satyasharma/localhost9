@@ -108,7 +108,7 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
             <div>
               <div className="p-4 border-b">
                 <button onClick={() => setView('menu')} className="text-sm text-orange-500 font-semibold hover:underline">
-                  ← Back
+                  ←
                 </button>
                 <h3 className="text-lg font-bold mt-1">Order History</h3>
               </div>
