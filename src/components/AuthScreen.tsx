@@ -100,15 +100,9 @@ export default function AuthScreen() {
 
         {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
 
-        {loading ? (
-          <div className="flex justify-center py-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
-          </div>
-        ) : (
-          <div className="flex justify-center">
-            <div ref={buttonRef}></div>
-          </div>
-        )}
+        <div className="flex justify-center">
+          <div ref={buttonRef}></div>
+        </div>
       </div>
     </div>
   );
