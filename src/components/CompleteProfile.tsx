@@ -32,7 +32,14 @@ export default function CompleteProfile({ userId, userName, userEmail, onComplet
         email: userEmail,
         phone: phone ? `+91${phone}` : null,
       }]);
-      if (error) throw error;
+      if (error) {
+        // Profile already exists — just proceed
+        if (error.code === '23505') {
+          onComplete();
+          return;
+        }
+        throw error;
+      }
       onComplete();
     } catch (err: any) {
       setError(err.message || 'Failed to save profile');

@@ -58,8 +58,11 @@ export default function Home() {
     setUserName(user.user_metadata?.full_name || user.user_metadata?.name || '');
     setUserEmail(user.email || '');
 
+    // Small delay to ensure session token is ready for RLS
+    await new Promise(r => setTimeout(r, 300));
+
     // Check if profile exists
-    const { data: existingProfile } = await supabase
+    const { data: existingProfile, error } = await supabase
       .from('users')
       .select('*')
       .eq('id', user.id)
