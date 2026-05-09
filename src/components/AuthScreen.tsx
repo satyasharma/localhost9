@@ -1,77 +1,27 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
-
-declare global {
-  interface Window {
-    google?: any;
-  }
-}
-
-// Generate a random nonce
-function generateNonce(): string {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
-}
-
-// Hash nonce with SHA-256 for Google
-async function hashNonce(nonce: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(nonce);
-  const hash = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('');
-}
 
 export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [scriptLoaded, setScriptLoaded] = useState(false);
-  const [nonce, setNonce] = useState('');
 
-  useEffect(() => {
-    const rawNonce = generateNonce();
-    setNonce(rawNonce);
-
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    script.onload = async () => {
-      if (window.google) {
-        const hashedNonce = await hashNonce(rawNonce);
-        window.google.accounts.id.initialize({
-          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-          callback: (response: any) => handleGoogleResponse(response, rawNonce),
-          nonce: hashedNonce,
-        });
-        setScriptLoaded(true);
-      }
-    };
-    document.head.appendChild(script);
-    return () => { document.head.removeChild(script); };
-  }, []);
-
-  const handleGoogleResponse = async (response: any, rawNonce: string) => {
+  const handleSignIn = async () => {
     setLoading(true);
     setError('');
     try {
-      const { error } = await supabase.auth.signInWithIdToken({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        token: response.credential,
-        nonce: rawNonce,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
       if (error) throw error;
     } catch (err: any) {
       setError(err.message || 'Failed to sign in');
       setLoading(false);
     }
-  };
-
-  const handleClick = () => {
-    if (!window.google || loading) return;
-    window.google.accounts.id.prompt();
   };
 
   return (
@@ -85,8 +35,8 @@ export default function AuthScreen() {
         {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
 
         <button
-          onClick={handleClick}
-          disabled={loading || !scriptLoaded}
+          onClick={handleSignIn}
+          disabled={loading}
           className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 hover:bg-gray-50 py-3 px-4 rounded-lg font-medium text-gray-700 transition-colors disabled:opacity-50"
         >
           {loading ? (
