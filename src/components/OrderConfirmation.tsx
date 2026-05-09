@@ -4,7 +4,6 @@ import { CheckCircle } from 'lucide-react';
 
 interface OrderConfirmationProps {
   isOpen: boolean;
-  orderId: string;
   displayOrderId: string;
   onClose: () => void;
 }

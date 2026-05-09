@@ -1,70 +1,26 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ShoppingBag, UtensilsCrossed, Menu as MenuIcon } from 'lucide-react';
+import { ShoppingBag, UtensilsCrossed } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { Dish, CartItem, UserProfile } from '@/types';
-import AuthScreen from '@/components/AuthScreen';
-import Sidebar from '@/components/Sidebar';
+import { Dish, CartItem } from '@/types';
 import Menu from '@/components/Menu';
 import Cart from '@/components/Cart';
 import OrderForm from '@/components/OrderForm';
 import OrderConfirmation from '@/components/OrderConfirmation';
 
 export default function Home() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [dishes, setDishes] = useState<Dish[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isOrderFormOpen, setIsOrderFormOpen] = useState(false);
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
   const [displayOrderId, setDisplayOrderId] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check auth state on mount
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        loadProfile(session.user.id);
-      } else {
-        setIsAuthenticated(false);
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        loadProfile(session.user.id);
-      } else {
-        setIsAuthenticated(false);
-        setProfile(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    fetchDishes();
   }, []);
-
-  // Load dishes when authenticated
-  useEffect(() => {
-    if (isAuthenticated) fetchDishes();
-  }, [isAuthenticated]);
-
-  const loadProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
-
-    if (data) {
-      setProfile(data);
-      setIsAuthenticated(true);
-    } else {
-      // User exists in auth but not in users table yet (new user flow)
-      setIsAuthenticated(true);
-    }
-  };
 
   const fetchDishes = async () => {
     const { data, error } = await supabase
@@ -108,43 +64,32 @@ export default function Home() {
   };
 
   const handleSubmitOrder = async (orderData: {
-    delivery_address: string;
+    name: string;
+    phone: string;
+    address: string;
     notes: string;
-    addressLabel?: string;
-    paymentMode: 'cod' | 'razorpay';
   }) => {
-    if (!profile) return;
-
     const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
     const summaryText = cart.map(item => `${item.name} ×${item.quantity}`).join(', ');
 
-    // Save new address if label provided
-    if (orderData.addressLabel?.trim()) {
-      await supabase.from('user_addresses').insert([{
-        user_id: profile.id,
-        label: orderData.addressLabel,
-        full_address: orderData.delivery_address,
-      }]);
-    }
-
-    // Generate order ID: last 2 chars of user ID (uppercase) + random 5 digits
-    const prefix = profile.id.slice(-2).toUpperCase();
+    // Generate simple order ID: last 2 chars of phone (uppercase hex-safe) + random 5 digits
+    const prefix = orderData.phone.slice(-2).toUpperCase();
     const random = Math.floor(10000 + Math.random() * 90000);
     const generatedDisplayId = `${prefix}${random}`;
 
-    // Create order
+    // Save to database
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert([{
         display_order_id: generatedDisplayId,
-        user_id: profile.id,
-        phone: profile.phone,
-        delivery_address: orderData.delivery_address,
+        user_id: null,
+        phone: orderData.phone,
+        delivery_address: orderData.address,
         total_amount: total,
         item_count: itemCount,
         summary_text: summaryText,
-        status: orderData.paymentMode === 'razorpay' ? 'paid' : 'pending',
+        status: 'pending',
         notes: orderData.notes,
       }])
       .select('id')
@@ -156,7 +101,7 @@ export default function Home() {
       return;
     }
 
-    // Create order items
+    // Save order items
     const orderItems = cart.map(item => ({
       order_id: order.id,
       dish_id: item.id,
@@ -167,42 +112,23 @@ export default function Home() {
 
     await supabase.from('order_items').insert(orderItems);
 
+    // Save customer info to localStorage for auto-fill next time
+    localStorage.setItem('localhost9_customer', JSON.stringify({
+      name: orderData.name,
+      phone: orderData.phone,
+      address: orderData.address,
+    }));
+
     setDisplayOrderId(generatedDisplayId);
     setIsOrderFormOpen(false);
     setIsConfirmationOpen(true);
     setCart([]);
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setIsAuthenticated(false);
-    setProfile(null);
-    setCart([]);
-    setIsSidebarOpen(false);
-  };
-
   const handleCloseConfirmation = () => {
     setIsConfirmationOpen(false);
     setDisplayOrderId('');
   };
-
-  // Loading state
-  if (isAuthenticated === null) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500" />
-      </div>
-    );
-  }
-
-  // Auth screen
-  if (!isAuthenticated) {
-    return <AuthScreen onAuthenticated={() => {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session?.user) loadProfile(session.user.id);
-      });
-    }} />;
-  }
 
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -213,17 +139,10 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => setIsSidebarOpen(true)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                aria-label="Open menu"
-              >
-                <MenuIcon size={24} className="text-gray-700" />
-              </button>
-              <UtensilsCrossed size={28} className="text-orange-500" />
+              <UtensilsCrossed size={32} className="text-orange-500" />
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-800">localHost9</h1>
-                <p className="text-xs text-gray-500 hidden sm:block">Your Daily Favorites, Delivered Fresh</p>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">localHost9</h1>
+                <p className="text-xs sm:text-sm text-gray-600">Your Daily Favorites, Delivered Fresh</p>
               </div>
             </div>
             <button
@@ -258,14 +177,6 @@ export default function Home() {
         )}
       </main>
 
-      {/* Sidebar */}
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-        profile={profile}
-        onLogout={handleLogout}
-      />
-
       {/* Cart */}
       <Cart
         cart={cart}
@@ -281,14 +192,12 @@ export default function Home() {
         isOpen={isOrderFormOpen}
         onClose={() => setIsOrderFormOpen(false)}
         cart={cart}
-        profile={profile}
         onSubmitOrder={handleSubmitOrder}
       />
 
       {/* Confirmation */}
       <OrderConfirmation
         isOpen={isConfirmationOpen}
-        orderId=""
         displayOrderId={displayOrderId}
         onClose={handleCloseConfirmation}
       />

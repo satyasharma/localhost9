@@ -1,69 +1,42 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, MapPin, FileText, Plus, CreditCard, Banknote } from 'lucide-react';
-import { CartItem, UserProfile, UserAddress } from '@/types';
-import { supabase } from '@/lib/supabase';
+import { X, MapPin, Phone, User, FileText } from 'lucide-react';
+import { CartItem, SavedCustomerInfo } from '@/types';
 
 interface OrderFormProps {
   isOpen: boolean;
   onClose: () => void;
   cart: CartItem[];
-  profile: UserProfile | null;
   onSubmitOrder: (orderData: {
-    delivery_address: string;
+    name: string;
+    phone: string;
+    address: string;
     notes: string;
-    addressLabel?: string;
-    paymentMode: 'cod' | 'razorpay';
   }) => void;
 }
 
-export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrder }: OrderFormProps) {
+export default function OrderForm({ isOpen, onClose, cart, onSubmitOrder }: OrderFormProps) {
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
-  const [addressLabel, setAddressLabel] = useState('');
-  const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([]);
-  const [selectedAddressId, setSelectedAddressId] = useState('');
-  const [showNewAddress, setShowNewAddress] = useState(false);
-  const [paymentMode, setPaymentMode] = useState<'cod' | 'razorpay'>('cod');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const hasRazorpay = !!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-
+  // Auto-fill from localStorage on open
   useEffect(() => {
-    if (isOpen && profile) {
-      loadAddresses();
+    if (isOpen) {
+      try {
+        const saved = localStorage.getItem('localhost9_customer');
+        if (saved) {
+          const info: SavedCustomerInfo = JSON.parse(saved);
+          setName(info.name || '');
+          setPhone(info.phone || '');
+          setAddress(info.address || '');
+        }
+      } catch {}
     }
-  }, [isOpen, profile]);
-
-  const loadAddresses = async () => {
-    if (!profile) return;
-    const { data } = await supabase
-      .from('user_addresses')
-      .select('*')
-      .eq('user_id', profile.id);
-
-    const addrs = data || [];
-    setSavedAddresses(addrs);
-    if (addrs.length === 0) {
-      setShowNewAddress(true);
-    } else {
-      setShowNewAddress(false);
-    }
-  };
-
-  const handleSelectAddress = (addr: UserAddress) => {
-    setSelectedAddressId(addr.id);
-    setAddress(addr.full_address);
-    setShowNewAddress(false);
-  };
-
-  const handleNewAddress = () => {
-    setShowNewAddress(true);
-    setSelectedAddressId('');
-    setAddress('');
-    setAddressLabel('');
-  };
+  }, [isOpen]);
 
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -71,12 +44,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrde
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await onSubmitOrder({
-        delivery_address: address,
-        notes,
-        addressLabel: addressLabel || undefined,
-        paymentMode,
-      });
+      await onSubmitOrder({ name, phone, address, notes });
     } finally {
       setIsSubmitting(false);
     }
@@ -113,74 +81,52 @@ export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrde
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Delivery Address */}
+            {/* Name */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <User size={16} className="inline mr-2" />
+                Full Name
+              </label>
+              <input
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                placeholder="Enter your name"
+              />
+            </div>
+
+            {/* Phone */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <Phone size={16} className="inline mr-2" />
+                Phone Number
+              </label>
+              <input
+                type="tel"
+                required
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                placeholder="Enter your phone number"
+              />
+            </div>
+
+            {/* Address */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 <MapPin size={16} className="inline mr-2" />
                 Delivery Address
               </label>
-
-              {savedAddresses.length > 0 && !showNewAddress && (
-                <div className="mb-4">
-                  <div className="space-y-2 mb-3">
-                    {savedAddresses.map((addr) => (
-                      <button
-                        key={addr.id}
-                        type="button"
-                        onClick={() => handleSelectAddress(addr)}
-                        className={`w-full text-left p-3 rounded-lg border-2 transition-all ${
-                          selectedAddressId === addr.id
-                            ? 'border-orange-500 bg-orange-50'
-                            : 'border-gray-300 hover:border-gray-400 bg-white'
-                        }`}
-                      >
-                        <div className="font-semibold text-gray-800">{addr.label}</div>
-                        <div className="text-sm text-gray-600">{addr.full_address}</div>
-                      </button>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleNewAddress}
-                    className="w-full py-2 px-4 border border-orange-500 text-orange-500 rounded-lg hover:bg-orange-50 font-semibold flex items-center justify-center gap-2 transition-colors"
-                  >
-                    <Plus size={18} />
-                    Add New Address
-                  </button>
-                </div>
-              )}
-
-              {(showNewAddress || savedAddresses.length === 0) && (
-                <>
-                  <div className="mb-3">
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Address Label</label>
-                    <input
-                      type="text"
-                      value={addressLabel}
-                      onChange={(e) => setAddressLabel(e.target.value)}
-                      placeholder="e.g., Home, Office"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
-                    />
-                  </div>
-                  <textarea
-                    required
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                    placeholder="Enter your complete address"
-                    rows={3}
-                  />
-                  {savedAddresses.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowNewAddress(false)}
-                      className="text-sm text-orange-500 font-semibold mt-1 hover:underline"
-                    >
-                      Use saved address instead
-                    </button>
-                  )}
-                </>
-              )}
+              <textarea
+                required
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                placeholder="Enter your complete delivery address"
+                rows={3}
+              />
             </div>
 
             {/* Notes */}
@@ -198,39 +144,10 @@ export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrde
               />
             </div>
 
-            {/* Payment Mode */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">Payment Method</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setPaymentMode('cod')}
-                  className={`p-4 rounded-lg border-2 flex flex-col items-center gap-2 transition-all ${
-                    paymentMode === 'cod' ? 'border-orange-500 bg-orange-50' : 'border-gray-300 hover:border-gray-400'
-                  }`}
-                >
-                  <Banknote size={24} className={paymentMode === 'cod' ? 'text-orange-500' : 'text-gray-500'} />
-                  <span className="font-semibold text-sm">Cash on Delivery</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMode('razorpay')}
-                  className={`p-4 rounded-lg border-2 flex flex-col items-center gap-2 transition-all ${
-                    paymentMode === 'razorpay' ? 'border-orange-500 bg-orange-50' : 'border-gray-300 hover:border-gray-400'
-                  } ${!hasRazorpay ? 'opacity-50' : ''}`}
-                  disabled={!hasRazorpay}
-                >
-                  <CreditCard size={24} className={paymentMode === 'razorpay' ? 'text-orange-500' : 'text-gray-500'} />
-                  <span className="font-semibold text-sm">Pay Online</span>
-                  {!hasRazorpay && <span className="text-xs text-gray-400">Coming soon</span>}
-                </button>
-              </div>
-            </div>
-
             {/* Submit */}
             <button
               type="submit"
-              disabled={isSubmitting || !address.trim()}
+              disabled={isSubmitting}
               className="w-full bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white py-4 rounded-lg font-bold text-lg transition-colors shadow-lg"
             >
               {isSubmitting ? 'Placing Order...' : `Place Order — ₹${total.toFixed(2)}`}
