@@ -32,7 +32,7 @@ export default function AuthScreen() {
           <p className="text-sm text-gray-500 mt-1">Root Access to Great Taste</p>
         </div>
 
-        <p className="text-center text-gray-600 mb-6">Sign in to order food, save addresses, and view order history.</p>
+        <p className="text-center text-gray-600 mb-6">Sign in to get started</p>
 
         {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
 
