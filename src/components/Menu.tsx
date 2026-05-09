@@ -15,7 +15,7 @@ export default function Menu({ dishes, cart, onAddToCart, onUpdateQuantity }: Me
   const getCartItem = (dishId: string) => cart.find(item => item.id === dishId);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="flex flex-wrap justify-center gap-6">
       {dishes.map((dish) => {
         const cartItem = getCartItem(dish.id);
         const quantity = cartItem?.quantity || 0;
@@ -23,7 +23,7 @@ export default function Menu({ dishes, cart, onAddToCart, onUpdateQuantity }: Me
         return (
           <div
             key={dish.id}
-            className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
+            className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 w-full max-w-sm"
           >
             <div className="relative h-48 overflow-hidden">
               <Image
