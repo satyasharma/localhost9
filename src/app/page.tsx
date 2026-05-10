@@ -123,31 +123,24 @@ export default function Home() {
     const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
     const summaryText = cart.map(item => `${item.name} ×${item.quantity}`).join(', ');
 
-    // Save new address with phone if label provided
-    if (orderData.addressLabel?.trim()) {
-      await supabase.from('user_addresses').insert([{
-        user_id: profile.id,
-        label: cleanInput(orderData.addressLabel),
-        full_address: cleanInput(orderData.address),
-        phone: orderData.phone,
-      }]);
-    }
-
-    // Create order
-    const { data: order, error: orderError } = await supabase
-      .from('orders')
-      .insert([{
-        user_id: profile.id,
-        phone: orderData.phone,
-        delivery_address: cleanInput(orderData.address),
-        total_amount: total,
-        item_count: itemCount,
-        summary_text: summaryText,
-        status: 'pending',
-        notes: cleanInput(orderData.notes),
-      }])
-      .select('id, display_order_id')
-      .single();
+    // Single atomic database call — address + order + items in one transaction
+    const { data: result, error: orderError } = await supabase.rpc('place_order', {
+      p_user_id: profile.id,
+      p_phone: orderData.phone,
+      p_address: cleanInput(orderData.address),
+      p_total: total,
+      p_item_count: itemCount,
+      p_summary: summaryText,
+      p_notes: cleanInput(orderData.notes),
+      p_address_label: orderData.addressLabel ? cleanInput(orderData.addressLabel) : null,
+      p_address_phone: orderData.phone,
+      p_items: JSON.stringify(cart.map(item => ({
+        dish_id: item.id,
+        dish_name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+      }))),
+    });
 
     if (orderError) {
       console.error('Order error:', orderError);
@@ -159,17 +152,7 @@ export default function Home() {
       return;
     }
 
-    // Save order items
-    const orderItems = cart.map(item => ({
-      order_id: order.id,
-      dish_id: item.id,
-      dish_name: item.name,
-      quantity: item.quantity,
-      price: item.price,
-    }));
-    await supabase.from('order_items').insert(orderItems);
-
-    setDisplayOrderId(order.display_order_id);
+    setDisplayOrderId(result?.[0]?.display_order_id || '');
     setIsOrderFormOpen(false);
     setIsConfirmationOpen(true);
     setCart([]);
