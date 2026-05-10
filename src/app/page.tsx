@@ -150,7 +150,11 @@ export default function Home() {
 
     if (orderError) {
       console.error('Order error:', orderError);
-      alert('Failed to place order. Please try again.');
+      if (orderError.code === '42501') {
+        alert('You have placed too many orders recently. Please wait a while and try again.');
+      } else {
+        alert('Failed to place order. Please try again.');
+      }
       return;
     }
 
