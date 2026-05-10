@@ -22,7 +22,7 @@ export default function OrderConfirmation({ isOpen, displayOrderId, onClose }: O
           <CheckCircle size={80} className="text-green-500" />
         </div>
         <h2 className="text-3xl font-bold text-gray-800 mb-4">Order Placed!</h2>
-        <p className="text-gray-600 mb-6">Your order has been received successfully.</p>
+        <p className="text-gray-600 mb-6">Your order has been placed successfully.</p>
 
         <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-6 mb-6 border-2 border-orange-200">
           <p className="text-sm text-gray-600 mb-2 font-semibold">YOUR ORDER NUMBER</p>
