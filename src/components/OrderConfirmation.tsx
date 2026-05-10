@@ -42,7 +42,6 @@ export default function OrderConfirmation({ isOpen, displayOrderId, onClose }: O
           </button>
         </div>
 
-        <p className="text-gray-600 mb-8">Save this number for your records. We&apos;ll use it to track and confirm your order.</p>
         <button
           onClick={onClose}
           className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg font-semibold transition-colors"
