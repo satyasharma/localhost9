@@ -192,7 +192,17 @@ export default function AdminPage() {
                 <div key={order.id} className="bg-white rounded-xl shadow-sm p-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-mono font-bold text-orange-600">#{order.display_order_id}</span>
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${conf.bg} ${conf.color}`}>{conf.label}</span>
+                    <button
+                      onClick={() => {
+                        const i = STATUS_FLOW.indexOf(order.status);
+                        if (i > 0) updateStatus(order.id, STATUS_FLOW[i - 1]);
+                      }}
+                      disabled={STATUS_FLOW.indexOf(order.status) === 0}
+                      className={`text-xs font-semibold px-2 py-1 rounded-full ${conf.bg} ${conf.color} ${STATUS_FLOW.indexOf(order.status) > 0 ? 'cursor-pointer hover:opacity-70' : 'cursor-default'}`}
+                      title={STATUS_FLOW.indexOf(order.status) > 0 ? 'Tap to undo' : ''}
+                    >
+                      {conf.label}
+                    </button>
                   </div>
                   <p className="text-sm font-medium text-gray-700 mb-1">{order.summary_text}</p>
                   <div className="text-sm text-gray-500 space-y-0.5 mb-3">
