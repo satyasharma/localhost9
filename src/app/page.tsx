@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ShoppingBag, UtensilsCrossed } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { cleanInput } from '@/lib/sanitize';
 import { Dish, CartItem, UserProfile } from '@/types';
 import AuthScreen from '@/components/AuthScreen';
 import Sidebar from '@/components/Sidebar';
@@ -125,8 +126,8 @@ export default function Home() {
     if (orderData.addressLabel?.trim()) {
       await supabase.from('user_addresses').insert([{
         user_id: profile.id,
-        label: orderData.addressLabel,
-        full_address: orderData.address,
+        label: cleanInput(orderData.addressLabel),
+        full_address: cleanInput(orderData.address),
         phone: orderData.phone,
       }]);
     }
@@ -137,12 +138,12 @@ export default function Home() {
       .insert([{
         user_id: profile.id,
         phone: orderData.phone,
-        delivery_address: orderData.address,
+        delivery_address: cleanInput(orderData.address),
         total_amount: total,
         item_count: itemCount,
         summary_text: summaryText,
         status: 'pending',
-        notes: orderData.notes,
+        notes: cleanInput(orderData.notes),
       }])
       .select('id, display_order_id')
       .single();
