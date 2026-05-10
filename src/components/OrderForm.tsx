@@ -10,6 +10,7 @@ interface OrderFormProps {
   onClose: () => void;
   cart: CartItem[];
   profile: UserProfile | null;
+  savedAddresses: UserAddress[];
   onSubmitOrder: (orderData: {
     address: string;
     phone: string;
@@ -18,7 +19,7 @@ interface OrderFormProps {
   }) => void;
 }
 
-export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrder }: OrderFormProps) {
+export default function OrderForm({ isOpen, onClose, cart, profile, savedAddresses: prefetchedAddresses, onSubmitOrder }: OrderFormProps) {
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
@@ -32,14 +33,15 @@ export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrde
   const [phoneError, setPhoneError] = useState('');
 
   useEffect(() => {
-    if (isOpen && profile) {
-      loadAddresses();
+    if (isOpen) {
+      setSavedAddresses(prefetchedAddresses);
+      setShowNewAddress(prefetchedAddresses.length === 0);
       // Pre-fill phone from profile if available
-      if (profile.phone) {
+      if (profile?.phone) {
         setPhone(profile.phone.replace('+91', ''));
       }
     }
-  }, [isOpen, profile]);
+  }, [isOpen, prefetchedAddresses, profile]);
 
   const loadAddresses = async () => {
     if (!profile) return;

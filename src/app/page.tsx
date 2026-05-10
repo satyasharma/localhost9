@@ -24,8 +24,12 @@ export default function Home() {
   const [displayOrderId, setDisplayOrderId] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [orderError, setOrderError] = useState('');
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
 
   useEffect(() => {
+    // Fetch dishes immediately (public, doesn't need auth)
+    fetchDishes();
+
     // Check existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
@@ -62,7 +66,6 @@ export default function Home() {
     };
     setProfile(p);
     setIsAuthenticated(true);
-    fetchDishes();
 
     // Silently ensure user exists in DB (for orders to reference)
     supabase.from('users').upsert({
@@ -70,6 +73,11 @@ export default function Home() {
       name: p.name,
       email: user.email,
     }, { onConflict: 'id' }).then(() => {});
+
+    // Pre-fetch saved addresses
+    supabase.from('user_addresses').select('*').eq('user_id', user.id).then(({ data }) => {
+      setSavedAddresses(data || []);
+    });
   };
 
   const fetchDishes = async () => {
@@ -269,6 +277,7 @@ export default function Home() {
         onClose={() => setIsOrderFormOpen(false)}
         cart={cart}
         profile={profile}
+        savedAddresses={savedAddresses}
         onSubmitOrder={handleSubmitOrder}
       />
 
