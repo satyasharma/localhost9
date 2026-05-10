@@ -29,7 +29,7 @@ type Filter = 'all' | 'pending' | 'received' | 'delivered';
 export default function AdminPage() {
   const [state, setState] = useState<'loading' | 'denied' | 'ready'>('loading');
   const [orders, setOrders] = useState<AdminOrder[]>([]);
-  const [filter, setFilter] = useState<Filter>('all');
+  const [filter, setFilter] = useState<Filter>('pending');
   const [loading, setLoading] = useState(false);
   const [dishes, setDishes] = useState<{id: string; name: string; price: number; available: boolean}[]>([]);
   const [showDishes, setShowDishes] = useState(false);
@@ -55,7 +55,7 @@ export default function AdminPage() {
       setState('denied');
       return;
     }
-    const res = await fetch('/api/admin/orders', {
+    const res = await fetch('/api/admin/orders?today=true', {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (res.status === 401) {
@@ -72,7 +72,7 @@ export default function AdminPage() {
     setLoading(true);
     const token = await getToken();
     if (!token) return;
-    const res = await fetch('/api/admin/orders', {
+    const res = await fetch(`/api/admin/orders?today=true`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (res.ok) {
@@ -80,7 +80,6 @@ export default function AdminPage() {
       // Alert if new pending orders appeared
       const pendingCount = data.filter((o: AdminOrder) => o.status === 'pending').length;
       if (prevOrderCountRef.current > 0 && pendingCount > prevOrderCountRef.current) {
-        // Play alert sound
         try {
           const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2JkZuTi4J6dXd+hoyRkY2Hg4GBg4WIi42OjYuJh4WEhIWGiImKi4uKiYiHhoaGh4iJiYqKiomIh4aGhoeIiYmKioqJiIeGhoaHiImJioqKiYiHhoaGh4iJiYqKiomIh4aGhoeIiQ==');
           audio.volume = 0.5;

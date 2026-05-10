@@ -34,11 +34,25 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = getServiceClient();
-  const { data, error } = await supabase
-    .from('orders')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(100);
+  const url = new URL(request.url);
+  const status = url.searchParams.get('status');
+  const today = url.searchParams.get('today');
+
+  let query = supabase.from('orders').select('*').order('created_at', { ascending: false });
+
+  // Filter by status if provided
+  if (status && status !== 'all') {
+    query = query.eq('status', status);
+  }
+
+  // Filter to today only if requested
+  if (today === 'true') {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    query = query.gte('created_at', todayStart.toISOString());
+  }
+
+  const { data, error } = await query.limit(50);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
