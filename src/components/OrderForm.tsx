@@ -98,14 +98,14 @@ export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrde
       setPhoneError('Phone must be 10 digits');
       return;
     }
-    if (!isPincodeValid) {
+    if (showNewAddress && !isPincodeValid) {
       setPincodeError('Please enter a valid serviceable pin code');
       return;
     }
     setIsSubmitting(true);
     try {
       await onSubmitOrder({
-        address: `${address} - ${pincode}`,
+        address: showNewAddress ? `${address} - ${pincode}` : address,
         phone: `+91${phone}`,
         notes,
         addressLabel: showNewAddress ? (addressLabel || undefined) : undefined,
@@ -278,7 +278,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrde
             {/* Submit */}
             <button
               type="submit"
-              disabled={isSubmitting || !address.trim() || phone.length !== 10 || !isPincodeValid}
+              disabled={isSubmitting || !address.trim() || phone.length !== 10 || (showNewAddress && !isPincodeValid)}
               className="w-full bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white py-4 rounded-lg font-bold text-lg transition-colors shadow-lg"
             >
               {isSubmitting ? 'Placing Order...' : `Place Order - ₹${total % 1 === 0 ? total.toFixed(0) : total.toFixed(2)}`}
