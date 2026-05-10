@@ -311,11 +311,15 @@ export default function Home() {
 
       <footer className="bg-gray-800 text-white py-8 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="text-center sm:text-left">
               <p className="text-sm font-semibold text-gray-300 mb-1">Service Hours</p>
               <p className="text-sm text-gray-400">Saturday & Sunday</p>
               <p className="text-sm text-gray-400">9:00 AM – 9:00 PM</p>
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-semibold">localHost9</p>
+              <p className="text-gray-400 text-sm">Root Access to Great Taste</p>
             </div>
             <div className="text-center sm:text-right">
               <p className="text-sm font-semibold text-gray-300 mb-1">Contact</p>
@@ -331,10 +335,6 @@ export default function Home() {
                 WhatsApp
               </a>
             </div>
-          </div>
-          <div className="text-center border-t border-gray-700 pt-6">
-            <p className="text-lg font-semibold mb-1">localHost9</p>
-            <p className="text-gray-400 text-sm">Root Access to Great Taste</p>
           </div>
         </div>
       </footer>
