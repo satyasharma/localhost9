@@ -23,6 +23,8 @@ export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrde
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
   const [addressLabel, setAddressLabel] = useState('');
+  const [pincode, setPincode] = useState('');
+  const [pincodeError, setPincodeError] = useState('');
   const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState('');
   const [showNewAddress, setShowNewAddress] = useState(false);
@@ -67,6 +69,27 @@ export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrde
     setPhoneError(digits.length > 0 && digits.length < 10 ? 'Phone must be 10 digits' : '');
   };
 
+  const SERVICEABLE_PINCODES = [
+    '560037', '560066', '560048', '560038', '560017',
+    '560036', '560067', '560016', '560008', '560071', '560103',
+  ];
+
+  const handlePincodeChange = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 6);
+    setPincode(digits);
+    if (digits.length === 6) {
+      if (SERVICEABLE_PINCODES.includes(digits)) {
+        setPincodeError('');
+      } else {
+        setPincodeError('This area is currently outside our service zone. We will be expanding soon!');
+      }
+    } else {
+      setPincodeError('');
+    }
+  };
+
+  const isPincodeValid = pincode.length === 6 && SERVICEABLE_PINCODES.includes(pincode);
+
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,10 +98,14 @@ export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrde
       setPhoneError('Phone must be 10 digits');
       return;
     }
+    if (!isPincodeValid) {
+      setPincodeError('Please enter a valid serviceable pin code');
+      return;
+    }
     setIsSubmitting(true);
     try {
       await onSubmitOrder({
-        address,
+        address: `${address} - ${pincode}`,
         phone: `+91${phone}`,
         notes,
         addressLabel: showNewAddress ? (addressLabel || undefined) : undefined,
@@ -178,6 +205,25 @@ export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrde
                     placeholder="Enter your complete delivery address"
                     rows={3}
                   />
+                  <div className="mt-3">
+                    <input
+                      type="text"
+                      required
+                      value={pincode}
+                      onChange={(e) => handlePincodeChange(e.target.value)}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm ${
+                        pincodeError ? 'border-red-400' : 'border-gray-300'
+                      }`}
+                      placeholder="Pin code (6 digits)"
+                      maxLength={6}
+                    />
+                    {pincodeError && (
+                      <p className="text-red-500 text-xs mt-1">{pincodeError}</p>
+                    )}
+                    {isPincodeValid && (
+                      <p className="text-green-600 text-xs mt-1">✓ We deliver to this area</p>
+                    )}
+                  </div>
                   {savedAddresses.length > 0 && (
                     <button
                       type="button"
@@ -232,7 +278,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrde
             {/* Submit */}
             <button
               type="submit"
-              disabled={isSubmitting || !address.trim() || phone.length !== 10}
+              disabled={isSubmitting || !address.trim() || phone.length !== 10 || !isPincodeValid}
               className="w-full bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white py-4 rounded-lg font-bold text-lg transition-colors shadow-lg"
             >
               {isSubmitting ? 'Placing Order...' : `Place Order - ₹${total % 1 === 0 ? total.toFixed(0) : total.toFixed(2)}`}
