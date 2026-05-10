@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const status = url.searchParams.get('status');
   const today = url.searchParams.get('today');
+  const offset = parseInt(url.searchParams.get('offset') || '0');
 
   let query = supabase.from('orders').select('*').order('created_at', { ascending: false });
 
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
     query = query.gte('created_at', todayStart.toISOString());
   }
 
-  const { data, error } = await query.limit(50);
+  const { data, error } = await query.range(offset, offset + 49);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

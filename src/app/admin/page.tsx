@@ -31,6 +31,8 @@ export default function AdminPage() {
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [filter, setFilter] = useState<Filter>('pending');
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 50;
   const [dishes, setDishes] = useState<{id: string; name: string; price: number; available: boolean}[]>([]);
   const [showDishes, setShowDishes] = useState(false);
   const prevOrderCountRef = useRef(0);
@@ -68,16 +70,16 @@ export default function AdminPage() {
     setState('ready');
   };
 
-  const fetchOrders = useCallback(async () => {
+  const fetchOrders = useCallback(async (pageNum?: number) => {
     setLoading(true);
     const token = await getToken();
     if (!token) return;
-    const res = await fetch(`/api/admin/orders?today=true`, {
+    const offset = (pageNum ?? page) * PAGE_SIZE;
+    const res = await fetch(`/api/admin/orders?today=true&offset=${offset}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (res.ok) {
       const data = await res.json();
-      // Alert if new pending orders appeared
       const pendingCount = data.filter((o: AdminOrder) => o.status === 'pending').length;
       if (prevOrderCountRef.current > 0 && pendingCount > prevOrderCountRef.current) {
         try {
@@ -90,7 +92,7 @@ export default function AdminPage() {
       setOrders(data);
     }
     setLoading(false);
-  }, []);
+  }, [page]);
 
   const updateStatus = async (orderId: string, newStatus: string) => {
     const token = await getToken();
@@ -153,7 +155,7 @@ export default function AdminPage() {
             <h1 className="text-lg font-bold text-gray-800">localHost9 Admin</h1>
             <p className="text-xs text-gray-500">Order Management</p>
           </div>
-          <button onClick={fetchOrders} disabled={loading} className="p-2 hover:bg-gray-100 rounded-full" aria-label="Refresh">
+          <button onClick={() => fetchOrders()} disabled={loading} className="p-2 hover:bg-gray-100 rounded-full" aria-label="Refresh">
             <RefreshCw size={20} className={`text-gray-600 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
@@ -271,6 +273,25 @@ export default function AdminPage() {
             })}
           </div>
         )}
+
+        {/* Pagination */}
+        <div className="flex items-center justify-between mt-6">
+          <button
+            onClick={() => { const p = page - 1; setPage(p); fetchOrders(p); }}
+            disabled={page === 0}
+            className="px-4 py-2 bg-white rounded-lg text-sm font-medium disabled:opacity-30"
+          >
+            ← Previous
+          </button>
+          <span className="text-sm text-gray-500">Page {page + 1}</span>
+          <button
+            onClick={() => { const p = page + 1; setPage(p); fetchOrders(p); }}
+            disabled={filtered.length < PAGE_SIZE}
+            className="px-4 py-2 bg-white rounded-lg text-sm font-medium disabled:opacity-30"
+          >
+            Next →
+          </button>
+        </div>
       </div>
     </div>
   );
