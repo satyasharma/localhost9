@@ -365,7 +365,7 @@ export default function Home() {
               </section>
               <section>
                 <h3 className="font-bold text-gray-800 mb-1">Privacy</h3>
-                <p>We collect your name, email (via Google), phone, and address for order fulfillment only. We do not sell, share, or use your data for marketing. Your data is stored securely with row-level access control.</p>
+                <p>We collect your name, email (via Google), phone, and address for order fulfillment only. We do not sell, share, or use your data for marketing. Your data is stored securely.</p>
               </section>
               <section>
                 <h3 className="font-bold text-gray-800 mb-1">Contact</h3>
