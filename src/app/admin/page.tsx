@@ -39,10 +39,10 @@ export default function AdminPage() {
 
   useEffect(() => {
     init();
-    // Auto-refresh every 30 seconds to catch new orders
+    // Auto-refresh every 60 seconds, only when tab is visible
     const interval = setInterval(() => {
-      if (state === 'ready') fetchOrders();
-    }, 30000);
+      if (state === 'ready' && document.visibilityState === 'visible') fetchOrders();
+    }, 60000);
     return () => clearInterval(interval);
   }, []);
 
