@@ -35,7 +35,7 @@ export default function Home() {
 
     // Listen for auth changes (new sign-in or sign-out)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
         signedIn(session.user);
       } else if (event === 'SIGNED_OUT') {
         setIsAuthenticated(false);

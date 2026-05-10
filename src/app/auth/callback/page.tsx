@@ -1,39 +1,37 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 export default function AuthCallback() {
-  const router = useRouter();
-
   useEffect(() => {
-    // Supabase automatically picks up the tokens from the URL hash/params
-    // We just need to wait for the session to be established then redirect
-    const handleCallback = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
+    // The URL contains the auth tokens in the hash fragment
+    // Supabase client automatically detects and processes them
+    // We just need to wait briefly then redirect
+
+    const redirect = () => {
+      window.location.href = '/';
+    };
+
+    // Try to get session immediately (tokens might already be processed)
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        router.replace('/');
+        redirect();
         return;
       }
 
-      // If no session yet, listen for the auth state change
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_IN' && session) {
+      // Listen for sign-in event
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+        if (event === 'SIGNED_IN') {
           subscription.unsubscribe();
-          router.replace('/');
+          redirect();
         }
       });
 
-      // Timeout fallback — if nothing happens in 5s, redirect home anyway
-      setTimeout(() => {
-        router.replace('/');
-      }, 5000);
-    };
-
-    handleCallback();
-  }, [router]);
+      // Force redirect after 3 seconds regardless
+      setTimeout(redirect, 3000);
+    });
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center">
