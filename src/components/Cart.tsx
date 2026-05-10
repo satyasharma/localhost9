@@ -17,11 +17,17 @@ export default function Cart({ cart, isOpen, onClose, onUpdateQuantity, onRemove
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-end">
-      <div className="bg-white w-full max-w-md h-full overflow-y-auto shadow-2xl flex flex-col">
+    <>
+      <div
+        className={`fixed inset-0 bg-black z-50 transition-opacity duration-300 ${
+          isOpen ? 'opacity-50' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={onClose}
+      />
+      <div className={`fixed top-0 right-0 w-full max-w-md h-full bg-white z-50 shadow-2xl flex flex-col transform transition-transform duration-300 ease-out ${
+        isOpen ? 'translate-x-0' : 'translate-x-full'
+      }`}>
         <div className="sticky top-0 bg-orange-500 text-white p-4 flex items-center justify-between z-10">
           <div className="flex items-center gap-2">
             <Package size={24} />
@@ -98,6 +104,6 @@ export default function Cart({ cart, isOpen, onClose, onUpdateQuantity, onRemove
           </>
         )}
       </div>
-    </div>
+    </>
   );
 }

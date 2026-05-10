@@ -16,8 +16,8 @@ export default function OrderConfirmation({ isOpen, displayOrderId, onClose }: O
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl max-w-md w-full p-8 text-center shadow-2xl">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 animate-[fadeIn_200ms_ease-out]">
+      <div className="bg-white rounded-xl max-w-md w-full p-8 text-center shadow-2xl animate-[scaleIn_200ms_ease-out]">
         <div className="mb-6 flex justify-center">
           <CheckCircle size={80} className="text-green-500" />
         </div>

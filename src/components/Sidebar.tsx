@@ -58,12 +58,17 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
     }
   };
 
-  if (!isOpen) return null;
-
   return (
     <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 z-50" onClick={onClose} />
-      <div className="fixed top-0 left-0 w-full max-w-sm h-full bg-white z-50 shadow-2xl flex flex-col">
+      <div
+        className={`fixed inset-0 bg-black z-50 transition-opacity duration-300 ${
+          isOpen ? 'opacity-50' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={onClose}
+      />
+      <div className={`fixed top-0 left-0 w-full max-w-sm h-full bg-white z-50 shadow-2xl flex flex-col transform transition-transform duration-300 ease-out ${
+        isOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
         {/* Header */}
         <div className="bg-orange-500 text-white p-6">
           <div className="flex items-center justify-between mb-4">
