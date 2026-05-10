@@ -50,7 +50,7 @@ export default function Menu({ dishes, cart, onAddToCart, onUpdateQuantity }: Me
                     }`}
                   >
                     <Plus size={20} />
-                    {dish.available ? 'Add' : 'Unavailable'}
+                    Add
                   </button>
                 ) : (
                   <div className="flex items-center gap-2 bg-orange-100 rounded-lg p-1">
