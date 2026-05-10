@@ -74,7 +74,6 @@ export default function Home() {
     const { data } = await supabase
       .from('dishes')
       .select('*')
-      .eq('available', true)
       .order('created_at', { ascending: true });
     setDishes(data || []);
     setIsLoading(false);

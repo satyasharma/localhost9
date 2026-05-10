@@ -42,10 +42,15 @@ export default function Menu({ dishes, cart, onAddToCart, onUpdateQuantity }: Me
                 {quantity === 0 ? (
                   <button
                     onClick={() => onAddToCart(dish)}
-                    className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors duration-200"
+                    disabled={!dish.available}
+                    className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors duration-200 ${
+                      dish.available
+                        ? 'bg-orange-500 hover:bg-orange-600 text-white'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
                   >
                     <Plus size={20} />
-                    Add
+                    {dish.available ? 'Add' : 'Unavailable'}
                   </button>
                 ) : (
                   <div className="flex items-center gap-2 bg-orange-100 rounded-lg p-1">
