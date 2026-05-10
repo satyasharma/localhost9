@@ -32,6 +32,8 @@ export default function AdminPage() {
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [filter, setFilter] = useState<Filter>('all');
   const [loading, setLoading] = useState(false);
+  const [isStoreClosed, setIsStoreClosed] = useState(false);
+  const [togglingStore, setTogglingStore] = useState(false);
 
   useEffect(() => {
     init();
@@ -48,7 +50,6 @@ export default function AdminPage() {
       setState('denied');
       return;
     }
-    // Try fetching orders — if 401, not admin
     const res = await fetch('/api/admin/orders', {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -58,6 +59,11 @@ export default function AdminPage() {
     }
     const data = await res.json();
     setOrders(data);
+
+    // Fetch store settings
+    const { data: settings } = await supabase.from('store_settings').select('*').eq('id', 1).single();
+    if (settings) setIsStoreClosed(settings.is_manually_closed);
+
     setState('ready');
   };
 
@@ -123,11 +129,33 @@ export default function AdminPage() {
       </header>
 
       <div className="max-w-4xl mx-auto px-4 py-6">
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        {/* Store Toggle + Stats */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="bg-white rounded-xl p-4 shadow-sm flex flex-col items-center justify-center">
+            <p className="text-sm text-gray-500 mb-2">Store</p>
+            <button
+              onClick={async () => {
+                setTogglingStore(true);
+                const token = await getToken();
+                await fetch('/api/admin/settings', {
+                  method: 'PATCH',
+                  headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ is_manually_closed: !isStoreClosed }),
+                });
+                setIsStoreClosed(!isStoreClosed);
+                setTogglingStore(false);
+              }}
+              disabled={togglingStore}
+              className={`px-4 py-2 rounded-full text-sm font-bold transition-colors ${
+                isStoreClosed ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+              }`}
+            >
+              {isStoreClosed ? 'CLOSED' : 'OPEN'}
+            </button>
+          </div>
           <div className="bg-white rounded-xl p-4 shadow-sm">
             <p className="text-sm text-gray-500">Today</p>
-            <p className="text-2xl font-bold">{todayOrders.length} orders</p>
+            <p className="text-2xl font-bold">{todayOrders.length}</p>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-sm">
             <p className="text-sm text-gray-500">Revenue</p>

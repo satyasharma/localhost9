@@ -22,6 +22,8 @@ export default function Home() {
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
   const [displayOrderId, setDisplayOrderId] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isStoreOpen, setIsStoreOpen] = useState(true);
+  const [closedMessage, setClosedMessage] = useState('');
 
   useEffect(() => {
     // Check existing session
@@ -71,12 +73,29 @@ export default function Home() {
   };
 
   const fetchDishes = async () => {
-    const { data } = await supabase
-      .from('dishes')
-      .select('*')
-      .eq('available', true)
-      .order('created_at', { ascending: true });
-    setDishes(data || []);
+    const [dishesRes, settingsRes] = await Promise.all([
+      supabase.from('dishes').select('*').eq('available', true).order('created_at', { ascending: true }),
+      supabase.from('store_settings').select('*').eq('id', 1).single(),
+    ]);
+
+    setDishes(dishesRes.data || []);
+
+    if (settingsRes.data) {
+      const s = settingsRes.data;
+      if (s.is_manually_closed) {
+        setIsStoreOpen(false);
+        setClosedMessage(s.closed_message || 'We are currently closed.');
+      } else {
+        // Check time-based opening hours
+        const now = new Date().toLocaleTimeString('en-GB', { timeZone: s.timezone, hour12: false });
+        const isOpen = now >= s.open_time && now <= s.close_time;
+        setIsStoreOpen(isOpen);
+        if (!isOpen) {
+          setClosedMessage(`We're closed right now. Orders open at ${s.open_time.slice(0, 5)}.`);
+        }
+      }
+    }
+
     setIsLoading(false);
   };
 
@@ -254,7 +273,12 @@ export default function Home() {
           </div>
         ) : (
           <>
-            <Menu dishes={dishes} cart={cart} onAddToCart={addToCart} onUpdateQuantity={updateQuantity} />
+            {!isStoreOpen && (
+              <div className="mb-8 bg-red-50 border border-red-200 rounded-xl p-4 text-center">
+                <p className="text-red-700 font-semibold">{closedMessage}</p>
+              </div>
+            )}
+            <Menu dishes={dishes} cart={cart} onAddToCart={addToCart} onUpdateQuantity={updateQuantity} disabled={!isStoreOpen} />
             <p className="text-center text-gray-400 mt-12 text-lg">Many more items coming soon ✨</p>
           </>
         )}
