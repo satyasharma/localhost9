@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { RefreshCw, CheckCircle, Package } from 'lucide-react';
+import { RefreshCw, CheckCircle, Package, Bell } from 'lucide-react';
 
 interface AdminOrder {
   id: string;
@@ -33,9 +33,17 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [isStoreClosed, setIsStoreClosed] = useState(false);
   const [togglingStore, setTogglingStore] = useState(false);
+  const [dishes, setDishes] = useState<{id: string; name: string; price: number; available: boolean}[]>([]);
+  const [showDishes, setShowDishes] = useState(false);
+  const prevOrderCountRef = useRef(0);
 
   useEffect(() => {
     init();
+    // Auto-refresh every 30 seconds to catch new orders
+    const interval = setInterval(() => {
+      if (state === 'ready') fetchOrders();
+    }, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const getToken = async (): Promise<string | null> => {
@@ -75,6 +83,17 @@ export default function AdminPage() {
     });
     if (res.ok) {
       const data = await res.json();
+      // Alert if new pending orders appeared
+      const pendingCount = data.filter((o: AdminOrder) => o.status === 'pending').length;
+      if (prevOrderCountRef.current > 0 && pendingCount > prevOrderCountRef.current) {
+        // Play alert sound
+        try {
+          const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2JkZuTi4J6dXd+hoyRkY2Hg4GBg4WIi42OjYuJh4WEhIWGiImKi4uKiYiHhoaGh4iJiYqKiomIh4aGhoeIiYmKioqJiIeGhoaHiImJioqKiYiHhoaGh4iJiYqKiomIh4aGhoeIiQ==');
+          audio.volume = 0.5;
+          audio.play().catch(() => {});
+        } catch {}
+      }
+      prevOrderCountRef.current = pendingCount;
       setOrders(data);
     }
     setLoading(false);
@@ -89,6 +108,26 @@ export default function AdminPage() {
       body: JSON.stringify({ orderId, status: newStatus }),
     });
     setOrders(orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+  };
+
+  const fetchDishes = async () => {
+    const token = await getToken();
+    if (!token) return;
+    const res = await fetch('/api/admin/dishes', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) setDishes(await res.json());
+  };
+
+  const toggleDish = async (dishId: string, available: boolean) => {
+    const token = await getToken();
+    if (!token) return;
+    await fetch('/api/admin/dishes', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dishId, available }),
+    });
+    setDishes(dishes.map(d => d.id === dishId ? { ...d, available } : d));
   };
 
   const getNextStatus = (s: string) => {
@@ -160,6 +199,36 @@ export default function AdminPage() {
             <p className="text-sm text-gray-500">Revenue</p>
             <p className="text-2xl font-bold text-green-600">₹{todayRevenue.toFixed(0)}</p>
           </div>
+        </div>
+
+        {/* Menu Management */}
+        <div className="mb-6">
+          <button
+            onClick={() => { setShowDishes(!showDishes); if (!showDishes && dishes.length === 0) fetchDishes(); }}
+            className="text-sm font-semibold text-orange-500 hover:underline mb-3"
+          >
+            {showDishes ? '▲ Hide Menu Items' : '▼ Manage Menu Items'}
+          </button>
+          {showDishes && (
+            <div className="bg-white rounded-xl shadow-sm p-4 space-y-3">
+              {dishes.map(dish => (
+                <div key={dish.id} className="flex items-center justify-between">
+                  <div>
+                    <span className="font-medium text-gray-800">{dish.name}</span>
+                    <span className="text-sm text-gray-400 ml-2">₹{dish.price}</span>
+                  </div>
+                  <button
+                    onClick={() => toggleDish(dish.id, !dish.available)}
+                    className={`px-3 py-1 rounded-full text-xs font-bold ${
+                      dish.available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                    }`}
+                  >
+                    {dish.available ? 'Available' : 'Unavailable'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Filters */}
