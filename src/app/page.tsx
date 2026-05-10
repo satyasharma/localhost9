@@ -23,6 +23,7 @@ export default function Home() {
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
   const [displayOrderId, setDisplayOrderId] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [orderError, setOrderError] = useState('');
 
   useEffect(() => {
     // Check existing session
@@ -151,9 +152,9 @@ export default function Home() {
     if (orderError) {
       console.error('Order error:', orderError);
       if (orderError.code === '42501') {
-        alert('You have placed too many orders recently. Please wait a while and try again.');
+        setOrderError('You have placed too many orders recently. Please wait a while and try again.');
       } else {
-        alert('Failed to place order. Please try again.');
+        setOrderError('Failed to place order. Please try again.');
       }
       return;
     }
@@ -293,6 +294,22 @@ export default function Home() {
         displayOrderId={displayOrderId}
         onClose={() => { setIsConfirmationOpen(false); setDisplayOrderId(''); }}
       />
+
+      {/* Error Popup */}
+      {orderError && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-sm w-full p-6 text-center shadow-2xl">
+            <p className="text-4xl mb-4">😔</p>
+            <p className="text-gray-700 font-medium mb-6">{orderError}</p>
+            <button
+              onClick={() => setOrderError('')}
+              className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
 
       <footer className="bg-gray-800 text-white py-8 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
