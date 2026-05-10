@@ -17,16 +17,16 @@ interface AdminOrder {
   created_at: string;
 }
 
-const STATUS_FLOW = ['pending', 'received', 'delivered'];
+const STATUS_FLOW = ['pending', 'accepted', 'delivered'];
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   pending: { label: 'Pending', color: 'text-red-700', bg: 'bg-red-100' },
-  received: { label: 'Received', color: 'text-yellow-700', bg: 'bg-yellow-100' },
+  accepted: { label: 'Accepted', color: 'text-yellow-700', bg: 'bg-yellow-100' },
   delivered: { label: 'Delivered', color: 'text-green-700', bg: 'bg-green-100' },
   rejected: { label: 'Rejected', color: 'text-gray-700', bg: 'bg-gray-200' },
   cancelled: { label: 'Cancelled', color: 'text-gray-700', bg: 'bg-gray-200' },
 };
 
-type Filter = 'all' | 'pending' | 'received' | 'delivered';
+type Filter = 'all' | 'pending' | 'accepted' | 'delivered';
 
 export default function AdminPage() {
   const [state, setState] = useState<'loading' | 'denied' | 'ready'>('loading');
@@ -208,7 +208,7 @@ export default function AdminPage() {
 
         {/* Filters */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-          {(['all', 'pending', 'received', 'delivered'] as Filter[]).map(f => (
+          {(['all', 'pending', 'accepted', 'delivered'] as Filter[]).map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}

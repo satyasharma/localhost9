@@ -78,7 +78,7 @@ export async function PATCH(request: NextRequest) {
   const updateData: any = { status };
 
   // Set received_at timestamp when marking as received
-  if (status === 'received') {
+  if (status === 'accepted') {
     updateData.received_at = new Date().toISOString();
   }
 

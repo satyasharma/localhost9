@@ -53,14 +53,18 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
   const statusColor = (status: string) => {
     switch (status) {
       case 'delivered': return 'bg-green-100 text-green-700';
-      case 'received': return 'bg-yellow-100 text-yellow-700';
+      case 'accepted': return 'bg-yellow-100 text-yellow-700';
       case 'rejected': return 'bg-gray-200 text-gray-700';
       case 'cancelled': return 'bg-gray-200 text-gray-700';
       default: return 'bg-red-100 text-red-700';
     }
   };
 
-  const cancelOrder = async (orderId: string) => {
+  const cancelOrder = async (orderId: string, status: string) => {
+    if (status === 'accepted') {
+      const confirmed = window.confirm('Your order may already be in preparation. Are you sure you want to cancel?');
+      if (!confirmed) return;
+    }
     const { error } = await supabase.from('orders').update({ status: 'cancelled' }).eq('id', orderId);
     if (!error) {
       setOrders(orders.map(o => o.id === orderId ? { ...o, status: 'cancelled' } : o));
@@ -142,7 +146,7 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 mb-1">{order.summary_text}</p>
-                      {order.status === 'received' && order.received_at && (
+                      {order.status === 'accepted' && order.received_at && (
                         <p className="text-xs text-blue-600 mb-1">
                           🕐 Delivery by {new Date(new Date(order.received_at).getTime() + 60 * 60 * 1000).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
                         </p>
@@ -154,9 +158,9 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
                         <span className="text-gray-400">{formatDate(order.created_at)}</span>
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-green-600">₹{Number(order.total_amount).toFixed(0)}</span>
-                          {order.status === 'pending' && (
+                          {(order.status === 'pending' || order.status === 'accepted') && (
                             <button
-                              onClick={() => cancelOrder(order.id)}
+                              onClick={() => cancelOrder(order.id, order.status)}
                               className="text-xs text-red-500 hover:text-red-700 font-medium"
                             >
                               Cancel

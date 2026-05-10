@@ -353,11 +353,11 @@ export default function Home() {
               </section>
               <section>
                 <h3 className="font-bold text-gray-800 mb-1">Payment</h3>
-                <p>Cash on Delivery only. Exact amount to be paid at delivery.</p>
+                <p>Cash on Delivery available. Online payment (UPI) coming soon.</p>
               </section>
               <section>
                 <h3 className="font-bold text-gray-800 mb-1">Cancellation</h3>
-                <p>Orders can be cancelled before acceptance. Once accepted, orders cannot be cancelled.</p>
+                <p>Orders can be cancelled anytime before delivery. If your order is already being prepared, cancellation is still possible but we appreciate early notice.</p>
               </section>
               <section>
                 <h3 className="font-bold text-gray-800 mb-1">Food Safety</h3>
