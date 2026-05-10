@@ -9,10 +9,9 @@ interface MenuProps {
   cart: CartItem[];
   onAddToCart: (dish: Dish) => void;
   onUpdateQuantity: (dishId: string, quantity: number) => void;
-  disabled?: boolean;
 }
 
-export default function Menu({ dishes, cart, onAddToCart, onUpdateQuantity, disabled }: MenuProps) {
+export default function Menu({ dishes, cart, onAddToCart, onUpdateQuantity }: MenuProps) {
   const getCartItem = (dishId: string) => cart.find(item => item.id === dishId);
 
   return (
@@ -43,8 +42,7 @@ export default function Menu({ dishes, cart, onAddToCart, onUpdateQuantity, disa
                 {quantity === 0 ? (
                   <button
                     onClick={() => onAddToCart(dish)}
-                    disabled={disabled}
-                    className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors duration-200"
+                    className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors duration-200"
                   >
                     <Plus size={20} />
                     Add
