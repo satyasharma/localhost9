@@ -54,7 +54,16 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
     switch (status) {
       case 'delivered': return 'bg-green-100 text-green-700';
       case 'received': return 'bg-yellow-100 text-yellow-700';
+      case 'rejected': return 'bg-gray-200 text-gray-700';
+      case 'cancelled': return 'bg-gray-200 text-gray-700';
       default: return 'bg-red-100 text-red-700';
+    }
+  };
+
+  const cancelOrder = async (orderId: string) => {
+    const { error } = await supabase.from('orders').update({ status: 'cancelled' }).eq('id', orderId);
+    if (!error) {
+      setOrders(orders.map(o => o.id === orderId ? { ...o, status: 'cancelled' } : o));
     }
   };
 
@@ -138,9 +147,22 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
                           🕐 Delivery by {new Date(new Date(order.received_at).getTime() + 60 * 60 * 1000).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
                         </p>
                       )}
+                      {order.status === 'rejected' && (
+                        <p className="text-xs text-red-500 mb-1">Sorry, we couldn&apos;t process this order.</p>
+                      )}
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-400">{formatDate(order.created_at)}</span>
-                        <span className="font-bold text-green-600">₹{Number(order.total_amount).toFixed(0)}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-green-600">₹{Number(order.total_amount).toFixed(0)}</span>
+                          {order.status === 'pending' && (
+                            <button
+                              onClick={() => cancelOrder(order.id)}
+                              className="text-xs text-red-500 hover:text-red-700 font-medium"
+                            >
+                              Cancel
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))

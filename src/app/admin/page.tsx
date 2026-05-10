@@ -22,6 +22,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   pending: { label: 'Pending', color: 'text-red-700', bg: 'bg-red-100' },
   received: { label: 'Received', color: 'text-yellow-700', bg: 'bg-yellow-100' },
   delivered: { label: 'Delivered', color: 'text-green-700', bg: 'bg-green-100' },
+  rejected: { label: 'Rejected', color: 'text-gray-700', bg: 'bg-gray-200' },
+  cancelled: { label: 'Cancelled', color: 'text-gray-700', bg: 'bg-gray-200' },
 };
 
 type Filter = 'all' | 'pending' | 'received' | 'delivered';
@@ -257,13 +259,25 @@ export default function AdminPage() {
                       <span className="font-bold text-green-600">₹{Number(order.total_amount).toFixed(0)}</span>
                       <span className="text-xs text-gray-400 ml-2">{formatDate(order.created_at)} {formatTime(order.created_at)}</span>
                     </div>
-                    {next && nextConf ? (
-                      <button
-                        onClick={() => updateStatus(order.id, next)}
-                        className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-semibold"
-                      >
-                        → {nextConf.label}
-                      </button>
+                    {order.status === 'rejected' || order.status === 'cancelled' ? (
+                      <span className="text-gray-500 text-sm font-semibold">{STATUS_CONFIG[order.status]?.label}</span>
+                    ) : next && nextConf ? (
+                      <div className="flex items-center gap-2">
+                        {order.status === 'pending' && (
+                          <button
+                            onClick={() => updateStatus(order.id, 'rejected')}
+                            className="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm font-semibold"
+                          >
+                            Reject
+                          </button>
+                        )}
+                        <button
+                          onClick={() => updateStatus(order.id, next)}
+                          className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-semibold"
+                        >
+                          → {nextConf.label}
+                        </button>
+                      </div>
                     ) : (
                       <span className="text-green-600 text-sm font-semibold flex items-center gap-1"><CheckCircle size={14} /> Done</span>
                     )}
