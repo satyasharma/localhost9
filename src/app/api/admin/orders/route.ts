@@ -75,9 +75,16 @@ export async function PATCH(request: NextRequest) {
   }
 
   const supabase = getServiceClient();
+  const updateData: any = { status };
+
+  // Set received_at timestamp when marking as received
+  if (status === 'received') {
+    updateData.received_at = new Date().toISOString();
+  }
+
   const { error } = await supabase
     .from('orders')
-    .update({ status })
+    .update(updateData)
     .eq('id', orderId);
 
   if (error) {

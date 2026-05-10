@@ -15,12 +15,6 @@ export default function OrderConfirmation({ isOpen, displayOrderId, onClose }: O
     navigator.clipboard.writeText(displayOrderId);
   };
 
-  const deliveryTime = new Date(Date.now() + 60 * 60 * 1000).toLocaleTimeString('en-IN', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  });
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-xl max-w-md w-full p-8 text-center shadow-2xl">
@@ -28,8 +22,7 @@ export default function OrderConfirmation({ isOpen, displayOrderId, onClose }: O
           <CheckCircle size={80} className="text-green-500" />
         </div>
         <h2 className="text-3xl font-bold text-gray-800 mb-4">Order Placed!</h2>
-        <p className="text-gray-600 mb-2">Your order has been placed successfully.</p>
-        <p className="text-sm text-gray-500 mb-6">Estimated delivery by <span className="font-semibold text-gray-700">{deliveryTime}</span></p>
+        <p className="text-gray-600 mb-6">Your order has been placed successfully.</p>
 
         <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-6 mb-6 border-2 border-orange-200">
           <p className="text-sm text-gray-600 mb-2 font-semibold">YOUR ORDER NUMBER</p>

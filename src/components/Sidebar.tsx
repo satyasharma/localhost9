@@ -32,7 +32,7 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
     setLoadingOrders(true);
     const { data } = await supabase
       .from('orders')
-      .select('id, display_order_id, total_amount, item_count, summary_text, status, created_at')
+      .select('id, display_order_id, total_amount, item_count, summary_text, status, created_at, received_at')
       .eq('user_id', profile.id)
       .order('created_at', { ascending: false })
       .limit(20);
@@ -128,6 +128,11 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 mb-1">{order.summary_text}</p>
+                      {order.status === 'received' && order.received_at && (
+                        <p className="text-xs text-blue-600 mb-1">
+                          🕐 Delivery by {new Date(new Date(order.received_at).getTime() + 60 * 60 * 1000).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                        </p>
+                      )}
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-400">{formatDate(order.created_at)}</span>
                         <span className="font-bold text-green-600">₹{Number(order.total_amount).toFixed(0)}</span>

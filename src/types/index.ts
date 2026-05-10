@@ -38,4 +38,5 @@ export interface OrderSummary {
   summary_text: string;
   status: string;
   created_at: string;
+  received_at: string | null;
 }
