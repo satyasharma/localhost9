@@ -313,6 +313,7 @@ export default function Home() {
             <div className="text-center">
               <p className="text-lg font-semibold">localHost9</p>
               <p className="text-gray-400 text-sm">Root Access to Great Taste</p>
+              <a href="/terms" className="text-xs text-gray-500 hover:text-gray-300 mt-1 inline-block">Terms & Privacy</a>
             </div>
             <div className="text-center sm:text-right">
               <p className="text-sm font-semibold text-gray-300 mb-1">Contact</p>
