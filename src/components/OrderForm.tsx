@@ -278,21 +278,14 @@ export default function OrderForm({ isOpen, onClose, cart, profile, onSubmitOrde
             {/* Payment Method */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-3">Payment Method</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  className="p-3 rounded-lg border-2 border-orange-500 bg-orange-50 flex flex-col items-center gap-1"
-                >
-                  <span className="font-semibold text-sm text-gray-800">Cash on Delivery</span>
-                </button>
-                <button
-                  type="button"
-                  disabled
-                  className="p-3 rounded-lg border-2 border-gray-200 bg-gray-50 flex flex-col items-center gap-1 opacity-50 cursor-not-allowed"
-                >
-                  <span className="font-semibold text-sm text-gray-500">UPI</span>
-                  <span className="text-xs text-gray-400">Coming soon</span>
-                </button>
+              <div className="flex gap-3">
+                <div className="flex-1 p-4 rounded-lg border-2 border-orange-500 bg-orange-50 text-center">
+                  <p className="text-sm font-semibold text-gray-800">Cash on Delivery</p>
+                </div>
+                <div className="flex-1 p-4 rounded-lg border-2 border-gray-200 bg-gray-50 text-center opacity-50">
+                  <p className="text-sm font-semibold text-gray-400">UPI</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Coming soon</p>
+                </div>
               </div>
             </div>
 
