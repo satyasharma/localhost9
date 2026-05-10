@@ -19,8 +19,8 @@ interface AdminOrder {
 
 const STATUS_FLOW = ['pending', 'received', 'delivered'];
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  pending: { label: 'Pending', color: 'text-orange-700', bg: 'bg-orange-100' },
-  received: { label: 'Received', color: 'text-blue-700', bg: 'bg-blue-100' },
+  pending: { label: 'Pending', color: 'text-red-700', bg: 'bg-red-100' },
+  received: { label: 'Received', color: 'text-yellow-700', bg: 'bg-yellow-100' },
   delivered: { label: 'Delivered', color: 'text-green-700', bg: 'bg-green-100' },
 };
 

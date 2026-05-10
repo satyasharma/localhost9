@@ -53,9 +53,8 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
   const statusColor = (status: string) => {
     switch (status) {
       case 'delivered': return 'bg-green-100 text-green-700';
-      case 'preparing': return 'bg-yellow-100 text-yellow-700';
-      case 'cancelled': return 'bg-red-100 text-red-700';
-      default: return 'bg-orange-100 text-orange-700';
+      case 'received': return 'bg-yellow-100 text-yellow-700';
+      default: return 'bg-red-100 text-red-700';
     }
   };
 
