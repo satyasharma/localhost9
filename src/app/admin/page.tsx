@@ -17,15 +17,14 @@ interface AdminOrder {
   created_at: string;
 }
 
-const STATUS_FLOW = ['pending', 'preparing', 'out_for_delivery', 'delivered'];
+const STATUS_FLOW = ['pending', 'received', 'delivered'];
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   pending: { label: 'Pending', color: 'text-orange-700', bg: 'bg-orange-100' },
-  preparing: { label: 'Preparing', color: 'text-yellow-700', bg: 'bg-yellow-100' },
-  out_for_delivery: { label: 'Out for Delivery', color: 'text-blue-700', bg: 'bg-blue-100' },
+  received: { label: 'Received', color: 'text-blue-700', bg: 'bg-blue-100' },
   delivered: { label: 'Delivered', color: 'text-green-700', bg: 'bg-green-100' },
 };
 
-type Filter = 'all' | 'pending' | 'preparing' | 'out_for_delivery' | 'delivered';
+type Filter = 'all' | 'pending' | 'received' | 'delivered';
 
 export default function AdminPage() {
   const [state, setState] = useState<'loading' | 'denied' | 'ready'>('loading');
@@ -165,7 +164,7 @@ export default function AdminPage() {
 
         {/* Filters */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-          {(['all', 'pending', 'preparing', 'out_for_delivery', 'delivered'] as Filter[]).map(f => (
+          {(['all', 'pending', 'received', 'delivered'] as Filter[]).map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
@@ -173,7 +172,7 @@ export default function AdminPage() {
                 filter === f ? 'bg-orange-500 text-white' : 'bg-white text-gray-600'
               }`}
             >
-              {f === 'all' ? 'All' : f === 'out_for_delivery' ? 'Delivery' : f.charAt(0).toUpperCase() + f.slice(1)}
+              {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
               {' '}({f === 'all' ? orders.length : orders.filter(o => o.status === f).length})
             </button>
           ))}
