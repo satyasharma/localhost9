@@ -46,11 +46,15 @@ export async function GET(request: NextRequest) {
     query = query.eq('status', status);
   }
 
-  // Filter to today only if requested
+  // Filter to today only (IST — business operates in India)
   if (today === 'true') {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    query = query.gte('created_at', todayStart.toISOString());
+    // Get current time in IST and find midnight IST in UTC
+    const now = new Date();
+    const istOffsetMs = 5.5 * 60 * 60 * 1000;
+    const nowIST = new Date(now.getTime() + istOffsetMs);
+    // Midnight IST today in UTC
+    const midnightIST_UTC = new Date(Date.UTC(nowIST.getUTCFullYear(), nowIST.getUTCMonth(), nowIST.getUTCDate()) - istOffsetMs);
+    query = query.gte('created_at', midnightIST_UTC.toISOString());
   }
 
   const { data, error } = await query.range(offset, offset + 49);

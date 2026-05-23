@@ -136,9 +136,7 @@ export default function AdminPage() {
   const formatTime = (d: string) => new Date(d).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
   const formatDate = (d: string) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 
-  const todayStr = new Date().toISOString().split('T')[0];
-  const todayOrders = orders.filter(o => o.created_at?.startsWith(todayStr));
-  const todayRevenue = todayOrders.filter(o => o.status === 'delivered').reduce((s, o) => s + Number(o.total_amount), 0);
+  const todayRevenue = orders.filter(o => o.status === 'delivered').reduce((s, o) => s + Number(o.total_amount), 0);
 
   if (state === 'loading') {
     return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500" /></div>;
@@ -168,7 +166,7 @@ export default function AdminPage() {
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="bg-white rounded-xl p-4 shadow-sm">
             <p className="text-sm text-gray-500">Today</p>
-            <p className="text-2xl font-bold">{todayOrders.length} orders</p>
+            <p className="text-2xl font-bold">{orders.length} orders</p>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-sm">
             <p className="text-sm text-gray-500">Revenue</p>
