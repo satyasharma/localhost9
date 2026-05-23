@@ -138,7 +138,7 @@ export default function AdminPage() {
 
   const todayStr = new Date().toISOString().split('T')[0];
   const todayOrders = orders.filter(o => o.created_at?.startsWith(todayStr));
-  const todayRevenue = todayOrders.reduce((s, o) => s + Number(o.total_amount), 0);
+  const todayRevenue = todayOrders.filter(o => o.status === 'delivered').reduce((s, o) => s + Number(o.total_amount), 0);
 
   if (state === 'loading') {
     return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500" /></div>;
