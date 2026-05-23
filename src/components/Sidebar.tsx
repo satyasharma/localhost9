@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, User, Phone, Clock, LogOut, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, User, Phone, Clock, LogOut } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { UserProfile, OrderSummary } from '@/types';
 
@@ -13,36 +13,86 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarProps) {
-  const [showOrders, setShowOrders] = useState(false);
+  const [showOrderHistory, setShowOrderHistory] = useState(false);
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [allWeekLoaded, setAllWeekLoaded] = useState(false);
+  const [loading30Days, setLoading30Days] = useState(false);
+  const [is30DaysMode, setIs30DaysMode] = useState(false);
   const [cancelConfirm, setCancelConfirm] = useState<{ orderId: string; status: string } | null>(null);
 
-  useEffect(() => {
-    if (isOpen && showOrders && profile) {
-      fetchOrders();
-    }
-  }, [isOpen, showOrders, profile]);
+  const PAGE_SIZE = 20;
 
   useEffect(() => {
-    if (!isOpen) setShowOrders(false);
+    if (!isOpen) {
+      setShowOrderHistory(false);
+      setOrders([]);
+      setAllWeekLoaded(false);
+      setIs30DaysMode(false);
+    }
   }, [isOpen]);
 
-  const fetchOrders = async () => {
+  const getSevenDaysAgo = () => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    return d.toISOString();
+  };
+
+  const getThirtyDaysAgo = () => {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    return d.toISOString();
+  };
+
+  const openOrderHistory = async () => {
+    setShowOrderHistory(true);
+    setOrders([]);
+    setAllWeekLoaded(false);
+    setIs30DaysMode(false);
+    await fetchOrders7Days(0);
+  };
+
+  const fetchOrders7Days = async (offset: number) => {
     if (!profile) return;
     setLoadingOrders(true);
     const { data } = await supabase
       .from('orders')
       .select('id, display_order_id, total_amount, item_count, summary_text, status, created_at, received_at')
       .eq('user_id', profile.id)
+      .gte('created_at', getSevenDaysAgo())
       .order('created_at', { ascending: false })
-      .limit(20);
-    setOrders(data || []);
+      .range(offset, offset + PAGE_SIZE - 1);
+
+    const fetched = data || [];
+    if (offset === 0) {
+      setOrders(fetched);
+    } else {
+      setOrders(prev => [...prev, ...fetched]);
+    }
+
+    if (fetched.length < PAGE_SIZE) {
+      setAllWeekLoaded(true);
+    }
     setLoadingOrders(false);
   };
 
-  const toggleOrders = () => {
-    setShowOrders(!showOrders);
+  const loadMore7Days = () => {
+    fetchOrders7Days(orders.length);
+  };
+
+  const fetch30Days = async () => {
+    if (!profile) return;
+    setLoading30Days(true);
+    setIs30DaysMode(true);
+    const { data } = await supabase
+      .from('orders')
+      .select('id, display_order_id, total_amount, item_count, summary_text, status, created_at, received_at')
+      .eq('user_id', profile.id)
+      .gte('created_at', getThirtyDaysAgo())
+      .order('created_at', { ascending: false });
+
+    setOrders(data || []);
+    setLoading30Days(false);
   };
 
   const formatDate = (dateStr: string) => {
@@ -115,35 +165,62 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-4">
-            {/* Order History Toggle */}
+            {/* Order History Button */}
             <button
-              onClick={toggleOrders}
+              onClick={openOrderHistory}
               className="w-full flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <div className="flex items-center gap-3">
                 <Clock size={20} className="text-orange-500" />
                 <span className="font-semibold">Order History</span>
               </div>
-              {showOrders ? (
-                <ChevronUp size={20} className="text-gray-400" />
-              ) : (
-                <ChevronDown size={20} className="text-gray-400" />
-              )}
             </button>
+          </div>
+        </div>
 
-            {/* Orders List (expandable) */}
-            {showOrders && (
-              <div className="mt-2 space-y-3">
-                {loadingOrders ? (
-                  <div className="flex justify-center py-6">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
-                  </div>
-                ) : orders.length === 0 ? (
-                  <div className="text-center py-8 text-gray-400">
-                    <p>No orders yet</p>
-                  </div>
-                ) : (
-                  orders.map((order) => (
+        {/* Logout */}
+        <div className="p-4 border-t">
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center justify-center gap-2 p-3 text-red-500 hover:bg-red-50 rounded-lg font-semibold transition-colors"
+          >
+            <LogOut size={18} />
+            Logout
+          </button>
+        </div>
+      </div>
+
+      {/* Order History Popup */}
+      {showOrderHistory && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-md w-full max-h-[85vh] flex flex-col shadow-2xl animate-[scaleIn_200ms_ease-out]">
+            {/* Popup Header */}
+            <div className="sticky top-0 bg-white border-b px-5 py-4 flex items-center justify-between rounded-t-xl">
+              <h2 className="text-lg font-bold text-gray-800">
+                {is30DaysMode ? 'Last 30 Days' : 'Order History'}
+              </h2>
+              <button
+                onClick={() => setShowOrderHistory(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                aria-label="Close"
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Popup Body — scrollable */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {loadingOrders && orders.length === 0 ? (
+                <div className="flex justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
+                </div>
+              ) : orders.length === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  <p>No orders yet</p>
+                </div>
+              ) : (
+                <>
+                  {orders.map((order) => (
                     <div key={order.id} className="bg-gray-50 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-mono font-bold text-orange-600">#{order.display_order_id}</span>
@@ -175,28 +252,51 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
                         </div>
                       </div>
                     </div>
-                  ))
-                )}
-              </div>
-            )}
+                  ))}
+
+                  {/* Loading indicator for load more */}
+                  {loadingOrders && orders.length > 0 && (
+                    <div className="flex justify-center py-4">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500" />
+                    </div>
+                  )}
+
+                  {/* Load More (7 days) */}
+                  {!allWeekLoaded && !is30DaysMode && !loadingOrders && (
+                    <button
+                      onClick={loadMore7Days}
+                      className="w-full py-3 text-orange-500 font-semibold text-sm hover:bg-orange-50 rounded-lg transition-colors"
+                    >
+                      Load More
+                    </button>
+                  )}
+
+                  {/* Get 30 Days History */}
+                  {allWeekLoaded && !is30DaysMode && !loading30Days && (
+                    <button
+                      onClick={fetch30Days}
+                      className="w-full py-3 text-orange-500 font-semibold text-sm hover:bg-orange-50 rounded-lg transition-colors border border-orange-200"
+                    >
+                      Get 30 Days Order History
+                    </button>
+                  )}
+
+                  {/* Loading 30 days */}
+                  {loading30Days && (
+                    <div className="flex justify-center py-4">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500" />
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
-
-        {/* Logout */}
-        <div className="p-4 border-t">
-          <button
-            onClick={onLogout}
-            className="w-full flex items-center justify-center gap-2 p-3 text-red-500 hover:bg-red-50 rounded-lg font-semibold transition-colors"
-          >
-            <LogOut size={18} />
-            Logout
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* Cancel confirmation popup */}
       {cancelConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4 animate-[fadeIn_200ms_ease-out]">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[70] flex items-center justify-center p-4 animate-[fadeIn_200ms_ease-out]">
           <div className="bg-white rounded-xl max-w-sm w-full p-6 text-center shadow-2xl animate-[scaleIn_200ms_ease-out]">
             <p className="text-gray-700 font-medium mb-2">Cancel Order?</p>
             <p className="text-sm text-gray-500 mb-6">Your order may already be in preparation. Are you sure?</p>
