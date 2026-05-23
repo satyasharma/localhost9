@@ -26,6 +26,7 @@ export default function Home() {
   const [showTerms, setShowTerms] = useState(false);
   const [orderError, setOrderError] = useState('');
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+  const [activeCategory, setActiveCategory] = useState<'sweets' | 'meals' | 'farm_produce'>('sweets');
 
   useEffect(() => {
     // Fetch dishes immediately (public, doesn't need auth)
@@ -208,7 +209,7 @@ export default function Home() {
               <UtensilsCrossed size={28} className="text-orange-500" />
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold text-gray-800">localHost9</h1>
-                <p className="text-xs text-gray-500 hidden sm:block">Your Daily Favorites, Delivered Fresh</p>
+                <p className="text-xs text-gray-500 hidden sm:block">Fresh from Kitchen & Farm</p>
               </div>
             </div>
             <button
@@ -228,8 +229,25 @@ export default function Home() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-4">Our Popular Dishes</h2>
+        <div className="text-center mb-6">
+          <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-4">Our Specials</h2>
+        </div>
+
+        {/* Category tabs */}
+        <div className="flex justify-center gap-3 mb-8 flex-wrap">
+          {(['sweets', 'meals', 'farm_produce'] as const).map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors ${
+                activeCategory === cat
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'
+              }`}
+            >
+              {cat === 'sweets' ? 'Sweets' : cat === 'meals' ? 'Meals' : 'Farm Produce'}
+            </button>
+          ))}
         </div>
 
         {isLoading ? (
@@ -251,7 +269,7 @@ export default function Home() {
           </div>
         ) : (
           <>
-            <Menu dishes={dishes} cart={cart} onAddToCart={addToCart} onUpdateQuantity={updateQuantity} />
+            <Menu dishes={dishes.filter(d => d.item_class === activeCategory)} cart={cart} onAddToCart={addToCart} onUpdateQuantity={updateQuantity} />
             <p className="text-center text-gray-400 mt-12 text-lg">Many more items coming soon ✨</p>
           </>
         )}
