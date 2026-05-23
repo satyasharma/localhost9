@@ -1,6 +1,6 @@
 'use client';
 
-import { Package, Minus, Plus, Trash2, X } from 'lucide-react';
+import { ShoppingBag, Minus, Plus, Trash2, X } from 'lucide-react';
 import Image from 'next/image';
 import { CartItem } from '@/types';
 
@@ -30,7 +30,7 @@ export default function Cart({ cart, isOpen, onClose, onUpdateQuantity, onRemove
       }`}>
         <div className="sticky top-0 bg-orange-500 text-white p-4 flex items-center justify-between z-10">
           <div className="flex items-center gap-2">
-            <Package size={24} />
+            <ShoppingBag size={24} />
             <h2 className="text-xl font-bold">Your Cart ({itemCount})</h2>
           </div>
           <button onClick={onClose} className="hover:bg-orange-600 p-2 rounded-full transition-colors" aria-label="Close cart">
@@ -40,7 +40,7 @@ export default function Cart({ cart, isOpen, onClose, onUpdateQuantity, onRemove
 
         {cart.length === 0 ? (
           <div className="flex flex-col items-center justify-center flex-1 text-gray-400">
-            <Package size={64} className="mb-4" />
+            <ShoppingBag size={64} className="mb-4" />
             <p>Your cart is empty</p>
           </div>
         ) : (
