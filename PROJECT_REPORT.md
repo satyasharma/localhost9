@@ -1,14 +1,17 @@
-# localHost9 — Project Report
+# localHost9 — Project Report (Final)
 
 ## Overview
-A cloud kitchen food ordering website for **localHost9** (localhost9.in). Built with Next.js, Supabase, and Google OAuth. Deployed on Vercel with near-zero monthly cost.
+Cloud kitchen food ordering website serving Bengaluru's East side (Marathahalli, Whitefield, Mahadevpura, Indiranagar, HAL). Live at **localhost9.in**.
 
 ---
 
 ## Live URLs
-- **Website**: https://localhost9.in (redirects to https://www.localhost9.in)
-- **GitHub**: https://github.com/satyasharma/localhost9
-- **Supabase Project**: dsorrxddwuzjwjfkwfew
+| Resource | URL |
+|----------|-----|
+| Website | https://localhost9.in |
+| Admin Dashboard | https://localhost9.in/admin |
+| GitHub | https://github.com/satyasharma/localhost9 |
+| Supabase Project | dsorrxddwuzjwjfkwfew |
 
 ---
 
@@ -19,35 +22,29 @@ A cloud kitchen food ordering website for **localHost9** (localhost9.in). Built 
 | Frontend | Next.js 14 + Tailwind CSS + Lucide icons | Free |
 | Hosting | Vercel (auto-deploy from GitHub) | Free |
 | Database | Supabase PostgreSQL (free tier) | Free |
-| Auth | Google OAuth (via Google Identity Services) | Free |
+| Auth | Google OAuth (Google Identity Services) | Free |
 | Image Storage | Supabase Storage (public bucket) | Free |
 | Domain | localhost9.in (GoDaddy) | ₹199/year |
+| **Total** | | **~₹17/month** |
 
 ---
 
-## Authentication Flow
+## Authentication
 
-**Method**: Google OAuth via Google Identity Services (GIS)
+**Method:** Google OAuth via Google Identity Services (GIS)
 
-**How it works**:
-1. Google's `renderButton` is rendered hidden; a custom clean button triggers it
-2. Google One Tap also fires automatically for users already signed into Chrome
-3. On success, Google returns an ID token directly to the page (no redirect to Supabase URL)
-4. Token is passed to `supabase.auth.signInWithIdToken()` with a SHA-256 hashed nonce
-5. New users → "Complete Profile" screen asks for phone number
-6. Returning users → straight to menu
+**Flow:**
+1. Google's `renderButton` rendered hidden; custom clean button triggers it
+2. One Tap fires automatically for Chrome-signed-in users (shows localhost9.in, not Supabase URL)
+3. On success → ID token passed to `supabase.auth.signInWithIdToken()` with SHA-256 hashed nonce
+4. New users → straight to menu (profile created silently via background upsert)
+5. Returning users → session from local storage, instant menu load
 
-**Key decisions**:
-- Used GIS `renderButton` + `signInWithIdToken` instead of `signInWithOAuth` to avoid showing Supabase's gibberish URL on Google's consent page
-- Nonce is generated client-side, hashed with SHA-256 for Google, raw nonce sent to Supabase for verification
-- After selecting Google account, shows "Signing you in..." instead of flashing back to sign-in page
-
-**Google Cloud Console config**:
-- Project: localhost9
-- OAuth Client ID: 1022788259741-i0rubqofu7kk7ta71v8eopshtsg2qnut.apps.googleusercontent.com
-- Authorized JavaScript origins: https://localhost9.in, https://www.localhost9.in, https://dsorrxddwuzjwjfkwfew.supabase.co
-- Authorized redirect URI: https://dsorrxddwuzjwjfkwfew.supabase.co/auth/v1/callback
-- App is published (not in testing mode)
+**Google Cloud Console:**
+- OAuth Client ID: `1022788259741-i0rubqofu7kk7ta71v8eopshtsg2qnut.apps.googleusercontent.com`
+- Authorized JavaScript origins: `https://localhost9.in`, `https://www.localhost9.in`, `https://dsorrxddwuzjwjfkwfew.supabase.co`
+- Authorized redirect URI: `https://dsorrxddwuzjwjfkwfew.supabase.co/auth/v1/callback`
+- App published (not in testing mode)
 
 ---
 
@@ -55,123 +52,159 @@ A cloud kitchen food ordering website for **localHost9** (localhost9.in). Built 
 
 ### Tables
 
-**users**
-- id (uuid, PK, references auth.users)
-- name (text)
-- phone (text, nullable, NOT unique)
-- email (text, nullable)
-- created_at (timestamptz)
+| Table | Purpose |
+|-------|---------|
+| `users` | User profiles (id linked to auth.users, name, email, phone) |
+| `user_addresses` | Saved addresses with label, full_address, phone per address |
+| `dishes` | Menu items (name, description, price, image_url, available flag) |
+| `orders` | Orders with display_order_id (auto-sequence), status, delivery info, summary |
+| `order_items` | Line items per order (dish_id, dish_name snapshot, quantity, price) |
+| `store_settings` | Opening hours and manual close toggle |
 
-**user_addresses**
-- id (uuid, PK)
-- user_id (uuid, FK → users)
-- label (text) — e.g., "Home", "Office"
-- full_address (text)
-- phone (text) — contact number for this address
-- created_at (timestamptz)
+### Order Status Flow
+```
+pending → accepted → delivered
+         ↘ rejected (by admin)
+pending/accepted → cancelled (by user)
+```
 
-**dishes**
-- id (uuid, PK)
-- name (text)
-- description (text)
-- price (decimal) — in Rupees
-- image_url (text)
-- category (text)
-- available (boolean)
-- created_at (timestamptz)
-
-**orders**
-- id (uuid, PK)
-- display_order_id (text, auto-generated from sequence starting at 1001)
-- user_id (uuid, FK → users, nullable)
-- phone (text)
-- delivery_address (text)
-- total_amount (decimal)
-- item_count (integer)
-- summary_text (text) — e.g., "Coconut Laddoo ×2" for fast history display
-- status (text) — pending, preparing, delivered, cancelled
-- notes (text)
-- created_at (timestamptz)
-
-**order_items**
-- id (uuid, PK)
-- order_id (uuid, FK → orders)
-- dish_id (uuid, FK → dishes)
-- dish_name (text) — snapshot of name at order time
-- quantity (integer)
-- price (decimal)
-- created_at (timestamptz)
-
-### Sequences
-- `order_number_seq` — starts at 1001, auto-increments for display_order_id
+### Key Design Decisions
+- `display_order_id` auto-generated by PostgreSQL sequence (1001, 1002, 1003...)
+- `summary_text` stored on order for fast history display (no joins needed)
+- `dish_name` snapshot in order_items (history stays correct if dishes change)
+- `received_at` timestamp set when admin accepts (used to calculate delivery ETA)
+- `phone` per address (different contacts for home/office)
+- `phone` NOT unique on users (same person, multiple Google accounts)
 
 ### Indexes
-- `idx_orders_user_created` — orders(user_id, created_at DESC) for fast order history
+- `idx_orders_user_created` — orders(user_id, created_at DESC)
 - `idx_user_addresses_user` — user_addresses(user_id)
 - `idx_order_items_order` — order_items(order_id)
-- `idx_dishes_available` — dishes(available) WHERE available = true
+- `idx_dishes_available` — dishes(available)
 
 ### RLS Policies
-- Users can only read/write their own profile, addresses, orders, and order items
-- Dishes are publicly readable (available = true)
-- All policies use `auth.uid()` for row-level security
+- Users: read/write own profile only
+- Addresses: read/write/delete own only
+- Dishes: public read (all dishes, available or not)
+- Orders: users create own + cancel own (pending/accepted only); read own
+- Order items: users create/read via order ownership
+- Rate limit: max 5 orders per user per hour (enforced in `place_order` function)
 
-### Storage
-- Bucket: `images` (public)
-- Dish images stored at: `https://dsorrxddwuzjwjfkwfew.supabase.co/storage/v1/object/public/images/`
+### Atomic Order Placement
+Single RPC function `place_order()` handles address + order + items in one transaction:
+- 1 round trip instead of 3
+- All-or-nothing (no partial state)
+- ~0.5-1s instead of 3-4s
 
 ---
 
-## Current Menu
-| Dish | Price | Image |
-|------|-------|-------|
-| Coconut Laddoo | ₹200 | coconut-laddoo.jpg in Supabase storage |
+## Security
+
+| Protection | Implementation |
+|-----------|---------------|
+| Auth required for orders | RLS: `auth.uid() = user_id` |
+| Rate limiting | Max 5 orders/user/hour (RLS policy) |
+| Input sanitization | `cleanInput()` strips HTML tags from all user text |
+| Admin API protection | Server-side email check + service role key (never exposed to client) |
+| Service role key | Server-side only (`SUPABASE_SERVICE_ROLE_KEY`, no `NEXT_PUBLIC_` prefix) |
+| HTTPS enforced | 308 redirect from HTTP |
+| HSTS | 2-year max-age |
+| Fake order prevention | Anon key cannot insert orders (401 blocked) |
+| User data isolation | RLS ensures users only see own data |
+
+---
+
+## Performance
+
+| Metric | Value |
+|--------|-------|
+| Page load (HTML) | 0.16s |
+| HTML size | 6.7 KB |
+| JS bundle | ~50 KB |
+| API calls per order session | 6-7 total |
+| Dishes fetch | Parallel with auth (no blocking) |
+| Addresses | Pre-fetched after sign-in (instant on checkout) |
+| Order placement | 1 atomic RPC call |
+| Admin refresh | Every 60s, only when tab visible |
 
 ---
 
 ## UI Components
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| AuthScreen | src/components/AuthScreen.tsx | Google sign-in button (GIS renderButton + One Tap) |
-| CompleteProfile | src/components/CompleteProfile.tsx | New user phone number collection |
-| Menu | src/components/Menu.tsx | Dish grid with add/quantity controls |
-| Cart | src/components/Cart.tsx | Slide-in drawer from right |
-| OrderForm | src/components/OrderForm.tsx | Checkout: saved addresses, phone, notes |
-| OrderConfirmation | src/components/OrderConfirmation.tsx | Success modal with order number |
-| Sidebar | src/components/Sidebar.tsx | User profile, accordion order history, logout |
+| Component | Purpose |
+|-----------|---------|
+| `AuthScreen` | Google sign-in (GIS renderButton + One Tap + redirect fallback) |
+| `Menu` | Dish grid, add/quantity controls, greyed out when unavailable |
+| `Cart` | Slide-in drawer from right (300ms transition) |
+| `OrderForm` | Checkout: saved addresses, pin code validation, phone, payment method |
+| `OrderConfirmation` | Success modal with order number + copy button |
+| `Sidebar` | User profile, accordion order history with cancel, delivery ETA, logout |
+| `ErrorBoundary` | Catches crashes, shows friendly refresh screen |
 
 ---
 
-## User Flow
+## Admin Dashboard (`/admin`)
 
-1. **Sign in** → Google button → One Tap popup (or Google consent page as fallback)
-2. **New user** → asks for phone number → creates profile
-3. **Menu** → see dishes, add to cart with +/- controls
-4. **Cart** → slide-in drawer, adjust quantities, proceed to checkout
-5. **Checkout** → select saved address or add new (with phone per address), special instructions
-6. **Order placed** → confirmation with order number (#1001, #1002...), copy button
-7. **Sidebar** → user initial avatar (top-left), shows name/phone, accordion order history, logout
-
----
-
-## Order ID Generation
-- Sequential numbers from database sequence (1001, 1002, 1003...)
-- Auto-generated by PostgreSQL `nextval('order_number_seq')`
-- Stored in `display_order_id` column
-- Zero collision risk, easy to read over phone
+- **Access:** Only `satyasharma397@gmail.com` (verified server-side via service role key)
+- **Non-admins:** Silently redirected to home
+- **Features:**
+  - Today's order count + revenue
+  - Status filters (All, Pending, Accepted, Delivered)
+  - Order cards: items, phone, address, notes, total, timestamp
+  - One-click status advance (Pending → Accepted → Delivered)
+  - Reject button for pending orders
+  - Undo by tapping status badge
+  - Menu item availability toggle (Available/Unavailable)
+  - Auto-refresh every 60s (only when tab visible)
+  - Sound alert on new pending orders
+  - Pagination (50 per page, Previous/Next)
 
 ---
 
-## Key Design Decisions
+## Features
 
-1. **Phone per address, not per user** — allows different contact numbers for home/office/friend's place
-2. **Phone NOT unique on users** — same person can have multiple Google accounts with same phone
-3. **summary_text on orders** — avoids joining order_items + dishes for order history display
-4. **dish_name snapshot in order_items** — history stays correct even if dish names change
-5. **No WhatsApp/SMS OTP** — Google OAuth is free; WhatsApp OTP planned for later (~₹360/month at scale)
-6. **No payment gateway yet** — COD only; Razorpay ready to add when needed
-7. **Prices without .00** — shows ₹200 not ₹200.00 for whole amounts
+| Feature | Status |
+|---------|--------|
+| Google OAuth sign-in | ✅ |
+| Menu with dish images | ✅ |
+| Add to cart with quantity controls | ✅ |
+| Slide-in cart drawer | ✅ |
+| Saved addresses (per user) | ✅ |
+| Phone per address | ✅ |
+| Pin code validation (serviceable area only) | ✅ |
+| Sequential order numbers (#1001, #1002...) | ✅ |
+| Order history in sidebar | ✅ |
+| Cancel order (user, before delivery) | ✅ |
+| Reject order (admin) | ✅ |
+| Delivery ETA (shown after admin accepts) | ✅ |
+| Admin order management | ✅ |
+| Dish availability toggle (admin) | ✅ |
+| Payment: COD selected, UPI greyed (coming soon) | ✅ |
+| Terms & Privacy popup | ✅ |
+| Service hours in footer | ✅ |
+| WhatsApp contact in footer | ✅ |
+| Loading skeleton | ✅ |
+| Error boundary | ✅ |
+| Favicon (crossed utensils) | ✅ |
+| Smooth transitions (cart, sidebar, modals) | ✅ |
+| Rate limit popup (styled, not browser alert) | ✅ |
+| Input sanitization (XSS prevention) | ✅ |
+| Mobile responsive | ✅ |
+
+---
+
+## Service Configuration
+
+| Setting | Value |
+|---------|-------|
+| Service hours | Saturday & Sunday, 9 AM – 9 PM |
+| Delivery area | Marathahalli, Whitefield, Mahadevpura, Indiranagar, HAL |
+| Serviceable pin codes | 560037, 560066, 560048, 560038, 560017, 560036, 560067, 560016, 560008, 560071, 560103 |
+| Delivery SLA | Within 1 hour of acceptance |
+| Rate limit | 5 orders per user per hour |
+| Payment | Cash on Delivery (UPI coming soon) |
+| Admin email | satyasharma397@gmail.com |
+| WhatsApp | +91 8618725442 |
 
 ---
 
@@ -179,15 +212,16 @@ A cloud kitchen food ordering website for **localHost9** (localhost9.in). Built 
 
 | Variable | Purpose |
 |----------|---------|
-| NEXT_PUBLIC_SUPABASE_URL | Supabase project URL |
-| NEXT_PUBLIC_SUPABASE_ANON_KEY | Supabase anonymous key |
-| SUPABASE_URL | Server-side Supabase URL |
-| SUPABASE_ANON_KEY | Server-side Supabase key |
-| NEXT_PUBLIC_GOOGLE_CLIENT_ID | Google OAuth client ID |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key (public, safe) |
+| `SUPABASE_URL` | Server-side Supabase URL |
+| `SUPABASE_ANON_KEY` | Server-side anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Admin operations (server-side only, never exposed) |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Google OAuth client ID (public, safe) |
 
 ---
 
-## DNS Configuration (GoDaddy)
+## DNS (GoDaddy → Vercel)
 
 | Type | Name | Value |
 |------|------|-------|
@@ -196,18 +230,21 @@ A cloud kitchen food ordering website for **localHost9** (localhost9.in). Built 
 
 ---
 
-## Current Stats
-- Users: 4
-- Orders: 16
-- Active dishes: 1
-- Saved addresses: 8
-- Order items: 16
+## Current Data
+
+| Table | Count |
+|-------|-------|
+| Users | 4+ |
+| Orders | 20+ |
+| Dishes | 1 (Coconut Laddoo, ₹200) |
+| Addresses | 8+ |
 
 ---
 
-## Future Roadmap (discussed but not built)
-- WhatsApp OTP authentication (₹0.12/OTP via Meta Cloud API)
-- Razorpay payment integration (2% per transaction)
-- More menu items
-- Order status updates
-- Admin dashboard for managing orders
+## Rating: 8/10
+
+**Ready for:** Friends/family testing, soft launch with limited menu.
+
+**To reach 9/10:** More menu items, UPI payment, order notification to admin (email/WhatsApp alert).
+
+**To reach 10/10:** Real-time order updates, push notifications, analytics, PWA.
