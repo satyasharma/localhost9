@@ -16,6 +16,7 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
   const [showOrders, setShowOrders] = useState(false);
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [cancelConfirm, setCancelConfirm] = useState<{ orderId: string; status: string } | null>(null);
 
   useEffect(() => {
     if (isOpen && showOrders && profile) {
@@ -62,13 +63,18 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
 
   const cancelOrder = async (orderId: string, status: string) => {
     if (status === 'accepted') {
-      const confirmed = window.confirm('Your order may already be in preparation. Are you sure you want to cancel?');
-      if (!confirmed) return;
+      setCancelConfirm({ orderId, status });
+      return;
     }
+    await doCancel(orderId);
+  };
+
+  const doCancel = async (orderId: string) => {
     const { error } = await supabase.from('orders').update({ status: 'cancelled' }).eq('id', orderId);
     if (!error) {
       setOrders(orders.map(o => o.id === orderId ? { ...o, status: 'cancelled' } : o));
     }
+    setCancelConfirm(null);
   };
 
   return (
@@ -187,6 +193,30 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
           </button>
         </div>
       </div>
+
+      {/* Cancel confirmation popup */}
+      {cancelConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4 animate-[fadeIn_200ms_ease-out]">
+          <div className="bg-white rounded-xl max-w-sm w-full p-6 text-center shadow-2xl animate-[scaleIn_200ms_ease-out]">
+            <p className="text-gray-700 font-medium mb-2">Cancel Order?</p>
+            <p className="text-sm text-gray-500 mb-6">Your order may already be in preparation. Are you sure?</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setCancelConfirm(null)}
+                className="flex-1 py-2 rounded-lg border border-gray-300 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-colors"
+              >
+                Keep Order
+              </button>
+              <button
+                onClick={() => doCancel(cancelConfirm.orderId)}
+                className="flex-1 py-2 rounded-lg bg-red-500 text-white font-semibold text-sm hover:bg-red-600 transition-colors"
+              >
+                Yes, Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
