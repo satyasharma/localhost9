@@ -25,7 +25,7 @@ export default function Menu({ dishes, cart, onAddToCart, onUpdateQuantity }: Me
             key={dish.id}
             className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 w-full max-w-sm"
           >
-            <div className="relative h-48 overflow-hidden">
+            <div className="relative aspect-[5/3] overflow-hidden">
               <Image
                 src={dish.image_url}
                 alt={dish.name}
