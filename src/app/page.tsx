@@ -91,9 +91,12 @@ export default function Home() {
     setIsLoading(false);
   };
 
+  const MAX_ITEM_QTY = 10;
+
   const addToCart = (dish: Dish) => {
     const existing = cart.find(item => item.id === dish.id);
     if (existing) {
+      if (existing.quantity >= MAX_ITEM_QTY) return;
       setCart(cart.map(item =>
         item.id === dish.id ? { ...item, quantity: item.quantity + 1 } : item
       ));
@@ -105,6 +108,8 @@ export default function Home() {
   const updateQuantity = (dishId: string, quantity: number) => {
     if (quantity <= 0) {
       setCart(cart.filter(item => item.id !== dishId));
+    } else if (quantity > MAX_ITEM_QTY) {
+      return;
     } else {
       setCart(cart.map(item =>
         item.id === dishId ? { ...item, quantity } : item

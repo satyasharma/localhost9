@@ -71,7 +71,12 @@ export default function Cart({ cart, isOpen, onClose, onUpdateQuantity, onRemove
                       <span className="font-semibold w-8 text-center">{item.quantity}</span>
                       <button
                         onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
-                        className="bg-gray-200 hover:bg-gray-300 p-1 rounded transition-colors"
+                        disabled={item.quantity >= 10}
+                        className={`p-1 rounded transition-colors ${
+                          item.quantity >= 10
+                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                            : 'bg-gray-200 hover:bg-gray-300'
+                        }`}
                         aria-label="Increase"
                       >
                         <Plus size={16} />

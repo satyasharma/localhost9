@@ -13,6 +13,7 @@ interface MenuProps {
 
 export default function Menu({ dishes, cart, onAddToCart, onUpdateQuantity }: MenuProps) {
   const getCartItem = (dishId: string) => cart.find(item => item.id === dishId);
+  const MAX_ITEM_QTY = 10;
 
   return (
     <div className="flex flex-wrap justify-center gap-6">
@@ -64,7 +65,12 @@ export default function Menu({ dishes, cart, onAddToCart, onUpdateQuantity }: Me
                     <span className="font-semibold text-gray-800 w-8 text-center">{quantity}</span>
                     <button
                       onClick={() => onAddToCart(dish)}
-                      className="bg-orange-500 hover:bg-orange-600 text-white p-2 rounded transition-colors"
+                      disabled={quantity >= MAX_ITEM_QTY}
+                      className={`p-2 rounded transition-colors ${
+                        quantity >= MAX_ITEM_QTY
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-orange-500 hover:bg-orange-600 text-white'
+                      }`}
                       aria-label="Increase quantity"
                     >
                       <Plus size={18} />
