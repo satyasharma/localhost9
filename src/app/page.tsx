@@ -303,8 +303,8 @@ export default function Home() {
           </div>
         ) : (
           <>
-            {dishes.filter(d => d.item_class === activeCategory).length > 0 ? (
-              <Menu dishes={dishes.filter(d => d.item_class === activeCategory)} cart={cart} onAddToCart={addToCart} onUpdateQuantity={updateQuantity} />
+            {dishes.filter(d => d.category === activeCategory).length > 0 ? (
+              <Menu dishes={dishes.filter(d => d.category === activeCategory)} cart={cart} onAddToCart={addToCart} onUpdateQuantity={updateQuantity} />
             ) : (
               <p className="text-center text-gray-400 mt-12 text-lg">More items coming soon ✨</p>
             )}

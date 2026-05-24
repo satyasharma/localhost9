@@ -6,7 +6,6 @@ export interface Dish {
   image_url: string;
   available: boolean;
   category: string;
-  item_class: string;
   created_at: string;
 }
 
