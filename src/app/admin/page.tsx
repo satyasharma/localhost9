@@ -43,7 +43,7 @@ export default function AdminPage() {
     init();
     // Auto-refresh every 60 seconds, only when tab is visible
     const interval = setInterval(() => {
-      if (state === 'ready' && document.visibilityState === 'visible') fetchOrders();
+      if (document.visibilityState === 'visible') fetchOrders();
     }, 60000);
     return () => clearInterval(interval);
   }, []);
