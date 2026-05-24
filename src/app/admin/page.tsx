@@ -83,7 +83,7 @@ export default function AdminPage() {
     if (res.ok) {
       const data = await res.json();
       const pendingCount = data.filter((o: AdminOrder) => o.status === 'pending').length;
-      if (prevOrderCountRef.current > 0 && pendingCount > prevOrderCountRef.current) {
+      if (pendingCount > prevOrderCountRef.current) {
         try {
           // Loud notification bell using Web Audio API
           const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
