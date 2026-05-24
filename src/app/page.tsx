@@ -101,7 +101,7 @@ export default function Home() {
     }, { onConflict: 'id' }).then(() => {});
 
     // Pre-fetch saved addresses
-    supabase.from('user_addresses').select('*').eq('user_id', user.id).then(({ data }) => {
+    supabase.from('user_addresses').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).then(({ data }) => {
       setSavedAddresses(data || []);
     });
   };

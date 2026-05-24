@@ -48,7 +48,8 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
     const { data } = await supabase
       .from('user_addresses')
       .select('*')
-      .eq('user_id', profile.id);
+      .eq('user_id', profile.id)
+      .order('created_at', { ascending: false });
     const addrs = data || [];
     setSavedAddresses(addrs);
     setShowNewAddress(addrs.length === 0);
