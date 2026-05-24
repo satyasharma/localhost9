@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, User, Phone, Clock, LogOut } from 'lucide-react';
+import { X, User, Phone, Clock, LogOut, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { UserProfile, OrderSummary } from '@/types';
 
@@ -13,21 +13,29 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarProps) {
-  const [showOrderHistory, setShowOrderHistory] = useState(false);
+  const [showOrders, setShowOrders] = useState(false);
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
-  const [allWeekLoaded, setAllWeekLoaded] = useState(false);
-  const [loading30Days, setLoading30Days] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+
+  // Popup state
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupOrders, setPopupOrders] = useState<OrderSummary[]>([]);
+  const [loadingPopup, setLoadingPopup] = useState(false);
   const [is30DaysMode, setIs30DaysMode] = useState(false);
+  const [loading30Days, setLoading30Days] = useState(false);
+
   const [cancelConfirm, setCancelConfirm] = useState<{ orderId: string; status: string } | null>(null);
 
   const PAGE_SIZE = 20;
 
   useEffect(() => {
     if (!isOpen) {
-      setShowOrderHistory(false);
+      setShowOrders(false);
       setOrders([]);
-      setAllWeekLoaded(false);
+      setHasMore(false);
+      setShowPopup(false);
+      setPopupOrders([]);
       setIs30DaysMode(false);
     }
   }, [isOpen]);
@@ -44,15 +52,18 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
     return d.toISOString();
   };
 
-  const openOrderHistory = async () => {
-    setShowOrderHistory(true);
-    setOrders([]);
-    setAllWeekLoaded(false);
-    setIs30DaysMode(false);
-    await fetchOrders7Days(0);
+  const toggleOrders = async () => {
+    if (showOrders) {
+      setShowOrders(false);
+      return;
+    }
+    setShowOrders(true);
+    if (orders.length === 0) {
+      await fetchInitialOrders();
+    }
   };
 
-  const fetchOrders7Days = async (offset: number) => {
+  const fetchInitialOrders = async () => {
     if (!profile) return;
     setLoadingOrders(true);
     const { data } = await supabase
@@ -61,29 +72,36 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
       .eq('user_id', profile.id)
       .gte('created_at', getSevenDaysAgo())
       .order('created_at', { ascending: false })
-      .range(offset, offset + PAGE_SIZE - 1);
+      .range(0, PAGE_SIZE - 1);
 
     const fetched = data || [];
-    if (offset === 0) {
-      setOrders(fetched);
-    } else {
-      setOrders(prev => [...prev, ...fetched]);
-    }
-
-    if (fetched.length < PAGE_SIZE) {
-      setAllWeekLoaded(true);
-    }
+    setOrders(fetched);
+    setHasMore(fetched.length === PAGE_SIZE);
     setLoadingOrders(false);
   };
 
-  const loadMore7Days = () => {
-    fetchOrders7Days(orders.length);
+  const openLoadMorePopup = async () => {
+    setShowPopup(true);
+    setIs30DaysMode(false);
+    setLoadingPopup(true);
+    if (!profile) return;
+
+    const { data } = await supabase
+      .from('orders')
+      .select('id, display_order_id, total_amount, item_count, summary_text, status, created_at, received_at')
+      .eq('user_id', profile.id)
+      .gte('created_at', getSevenDaysAgo())
+      .order('created_at', { ascending: false });
+
+    setPopupOrders(data || []);
+    setLoadingPopup(false);
   };
 
   const fetch30Days = async () => {
     if (!profile) return;
     setLoading30Days(true);
     setIs30DaysMode(true);
+
     const { data } = await supabase
       .from('orders')
       .select('id, display_order_id, total_amount, item_count, summary_text, status, created_at, received_at')
@@ -91,7 +109,7 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
       .gte('created_at', getThirtyDaysAgo())
       .order('created_at', { ascending: false });
 
-    setOrders(data || []);
+    setPopupOrders(data || []);
     setLoading30Days(false);
   };
 
@@ -123,9 +141,44 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
     const { error } = await supabase.from('orders').update({ status: 'cancelled' }).eq('id', orderId);
     if (!error) {
       setOrders(orders.map(o => o.id === orderId ? { ...o, status: 'cancelled' } : o));
+      setPopupOrders(popupOrders.map(o => o.id === orderId ? { ...o, status: 'cancelled' } : o));
     }
     setCancelConfirm(null);
   };
+
+  const OrderCard = ({ order }: { order: OrderSummary }) => (
+    <div className="bg-gray-50 rounded-lg p-4">
+      <div className="flex items-center justify-between mb-2">
+        <span className="font-mono font-bold text-orange-600">#{order.display_order_id}</span>
+        <span className={`text-xs font-semibold px-2 py-1 rounded-full ${statusColor(order.status)}`}>
+          {order.status}
+        </span>
+      </div>
+      <p className="text-sm text-gray-600 mb-1">{order.summary_text}</p>
+      {order.status === 'accepted' && order.received_at && (
+        <p className="text-xs text-blue-600 mb-1">
+          🕐 Delivery by {new Date(new Date(order.received_at).getTime() + 60 * 60 * 1000).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+        </p>
+      )}
+      {order.status === 'rejected' && (
+        <p className="text-xs text-red-500 mb-1">Sorry, we couldn&apos;t process this order.</p>
+      )}
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-gray-400">{formatDate(order.created_at)}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-green-600">₹{Number(order.total_amount).toFixed(0)}</span>
+          {(order.status === 'pending' || order.status === 'accepted') && (
+            <button
+              onClick={() => cancelOrder(order.id, order.status)}
+              className="text-xs text-red-500 hover:text-red-700 font-medium"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -165,16 +218,48 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-4">
-            {/* Order History Button */}
+            {/* Order History Toggle */}
             <button
-              onClick={openOrderHistory}
+              onClick={toggleOrders}
               className="w-full flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <div className="flex items-center gap-3">
                 <Clock size={20} className="text-orange-500" />
                 <span className="font-semibold">Order History</span>
               </div>
+              {showOrders ? <ChevronUp size={20} className="text-gray-400" /> : <ChevronDown size={20} className="text-gray-400" />}
             </button>
+
+            {/* Inline Orders (max 20) */}
+            {showOrders && (
+              <div className="mt-2 space-y-3">
+                {loadingOrders ? (
+                  <div className="flex justify-center py-6">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
+                  </div>
+                ) : orders.length === 0 ? (
+                  <div className="text-center py-8 text-gray-400">
+                    <p>No orders yet</p>
+                  </div>
+                ) : (
+                  <>
+                    {orders.map((order) => (
+                      <OrderCard key={order.id} order={order} />
+                    ))}
+
+                    {/* Load More button — opens popup */}
+                    {hasMore && (
+                      <button
+                        onClick={openLoadMorePopup}
+                        className="w-full py-3 text-orange-500 font-semibold text-sm hover:bg-orange-50 rounded-lg transition-colors border border-orange-200"
+                      >
+                        Load More
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -190,17 +275,17 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
         </div>
       </div>
 
-      {/* Order History Popup */}
-      {showOrderHistory && (
+      {/* Full Order History Popup */}
+      {showPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4">
           <div className="bg-white rounded-xl max-w-md w-full max-h-[85vh] flex flex-col shadow-2xl animate-[scaleIn_200ms_ease-out]">
             {/* Popup Header */}
             <div className="sticky top-0 bg-white border-b px-5 py-4 flex items-center justify-between rounded-t-xl">
               <h2 className="text-lg font-bold text-gray-800">
-                {is30DaysMode ? 'Last 30 Days' : 'Order History'}
+                {is30DaysMode ? 'Last 30 Days' : 'Last 7 Days'}
               </h2>
               <button
-                onClick={() => setShowOrderHistory(false)}
+                onClick={() => { setShowPopup(false); setIs30DaysMode(false); }}
                 className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
                 aria-label="Close"
               >
@@ -208,80 +293,32 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
               </button>
             </div>
 
-            {/* Popup Body — scrollable */}
+            {/* Popup Body */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {loadingOrders && orders.length === 0 ? (
+              {loadingPopup ? (
                 <div className="flex justify-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
                 </div>
-              ) : orders.length === 0 ? (
+              ) : popupOrders.length === 0 ? (
                 <div className="text-center py-12 text-gray-400">
-                  <p>No orders yet</p>
+                  <p>No orders found</p>
                 </div>
               ) : (
                 <>
-                  {orders.map((order) => (
-                    <div key={order.id} className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-mono font-bold text-orange-600">#{order.display_order_id}</span>
-                        <span className={`text-xs font-semibold px-2 py-1 rounded-full ${statusColor(order.status)}`}>
-                          {order.status}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-1">{order.summary_text}</p>
-                      {order.status === 'accepted' && order.received_at && (
-                        <p className="text-xs text-blue-600 mb-1">
-                          🕐 Delivery by {new Date(new Date(order.received_at).getTime() + 60 * 60 * 1000).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
-                        </p>
-                      )}
-                      {order.status === 'rejected' && (
-                        <p className="text-xs text-red-500 mb-1">Sorry, we couldn&apos;t process this order.</p>
-                      )}
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-400">{formatDate(order.created_at)}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-green-600">₹{Number(order.total_amount).toFixed(0)}</span>
-                          {(order.status === 'pending' || order.status === 'accepted') && (
-                            <button
-                              onClick={() => cancelOrder(order.id, order.status)}
-                              className="text-xs text-red-500 hover:text-red-700 font-medium"
-                            >
-                              Cancel
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                  {popupOrders.map((order) => (
+                    <OrderCard key={order.id} order={order} />
                   ))}
 
-                  {/* Loading indicator for load more */}
-                  {loadingOrders && orders.length > 0 && (
-                    <div className="flex justify-center py-4">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500" />
-                    </div>
-                  )}
-
-                  {/* Load More (7 days) */}
-                  {!allWeekLoaded && !is30DaysMode && !loadingOrders && (
-                    <button
-                      onClick={loadMore7Days}
-                      className="w-full py-3 text-orange-500 font-semibold text-sm hover:bg-orange-50 rounded-lg transition-colors"
-                    >
-                      Load More
-                    </button>
-                  )}
-
-                  {/* Get 30 Days History */}
-                  {allWeekLoaded && !is30DaysMode && !loading30Days && (
+                  {/* See 30 days button */}
+                  {!is30DaysMode && !loading30Days && (
                     <button
                       onClick={fetch30Days}
                       className="w-full py-3 text-orange-500 font-semibold text-sm hover:bg-orange-50 rounded-lg transition-colors border border-orange-200"
                     >
-                      Get 30 Days Order History
+                      See Last 30 Days Orders
                     </button>
                   )}
 
-                  {/* Loading 30 days */}
                   {loading30Days && (
                     <div className="flex justify-center py-4">
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500" />
