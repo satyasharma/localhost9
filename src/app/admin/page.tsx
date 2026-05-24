@@ -85,9 +85,26 @@ export default function AdminPage() {
       const pendingCount = data.filter((o: AdminOrder) => o.status === 'pending').length;
       if (prevOrderCountRef.current > 0 && pendingCount > prevOrderCountRef.current) {
         try {
-          const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2JkZuTi4J6dXd+hoyRkY2Hg4GBg4WIi42OjYuJh4WEhIWGiImKi4uKiYiHhoaGh4iJiYqKiomIh4aGhoeIiYmKioqJiIeGhoaHiImJioqKiYiHhoaGh4iJiYqKiomIh4aGhoeIiQ==');
-          audio.volume = 0.5;
-          audio.play().catch(() => {});
+          // Loud notification bell using Web Audio API
+          const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const playBeep = (time: number, freq: number) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.value = freq;
+            osc.type = 'sine';
+            gain.gain.setValueAtTime(0.8, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.4);
+            osc.start(time);
+            osc.stop(time + 0.4);
+          };
+          // Play 3 beeps at different pitches for attention
+          playBeep(ctx.currentTime, 880);
+          playBeep(ctx.currentTime + 0.5, 1100);
+          playBeep(ctx.currentTime + 1.0, 880);
+          playBeep(ctx.currentTime + 1.5, 1100);
+          playBeep(ctx.currentTime + 2.0, 880);
         } catch {}
       }
       prevOrderCountRef.current = pendingCount;
