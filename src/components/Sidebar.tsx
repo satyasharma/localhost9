@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, User, Phone, Clock, LogOut, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, User, Phone, Clock, LogOut, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { UserProfile, OrderSummary } from '@/types';
 
@@ -207,6 +207,18 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
             {/* Inline Orders (max 20) */}
             {showOrders && (
               <div className="mt-2 space-y-3">
+                {/* Refresh button */}
+                <div className="flex justify-end">
+                  <button
+                    onClick={fetchInitialOrders}
+                    disabled={loadingOrders}
+                    className="flex items-center gap-1 text-xs text-orange-500 hover:text-orange-600 font-medium px-2 py-1 rounded hover:bg-orange-50 transition-colors"
+                    aria-label="Refresh orders"
+                  >
+                    <RefreshCw size={14} className={loadingOrders ? 'animate-spin' : ''} />
+                    Refresh
+                  </button>
+                </div>
                 {loadingOrders ? (
                   <div className="flex justify-center py-6">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
