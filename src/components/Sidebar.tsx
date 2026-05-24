@@ -22,8 +22,6 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
   const [showPopup, setShowPopup] = useState(false);
   const [popupOrders, setPopupOrders] = useState<OrderSummary[]>([]);
   const [loadingPopup, setLoadingPopup] = useState(false);
-  const [is30DaysMode, setIs30DaysMode] = useState(false);
-  const [loading30Days, setLoading30Days] = useState(false);
 
   const [cancelConfirm, setCancelConfirm] = useState<{ orderId: string; status: string } | null>(null);
 
@@ -36,15 +34,8 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
       setHasMore(false);
       setShowPopup(false);
       setPopupOrders([]);
-      setIs30DaysMode(false);
     }
   }, [isOpen]);
-
-  const getSevenDaysAgo = () => {
-    const d = new Date();
-    d.setDate(d.getDate() - 7);
-    return d.toISOString();
-  };
 
   const getThirtyDaysAgo = () => {
     const d = new Date();
@@ -70,7 +61,7 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
       .from('orders')
       .select('id, display_order_id, total_amount, item_count, summary_text, status, created_at, received_at')
       .eq('user_id', profile.id)
-      .gte('created_at', getSevenDaysAgo())
+      .gte('created_at', getThirtyDaysAgo())
       .order('created_at', { ascending: false })
       .range(0, PAGE_SIZE - 1);
 
@@ -80,27 +71,10 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
     setLoadingOrders(false);
   };
 
-  const openLoadMorePopup = async () => {
+  const openFullHistoryPopup = async () => {
     setShowPopup(true);
-    setIs30DaysMode(false);
     setLoadingPopup(true);
     if (!profile) return;
-
-    const { data } = await supabase
-      .from('orders')
-      .select('id, display_order_id, total_amount, item_count, summary_text, status, created_at, received_at')
-      .eq('user_id', profile.id)
-      .gte('created_at', getSevenDaysAgo())
-      .order('created_at', { ascending: false });
-
-    setPopupOrders(data || []);
-    setLoadingPopup(false);
-  };
-
-  const fetch30Days = async () => {
-    if (!profile) return;
-    setLoading30Days(true);
-    setIs30DaysMode(true);
 
     const { data } = await supabase
       .from('orders')
@@ -110,7 +84,7 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
       .order('created_at', { ascending: false });
 
     setPopupOrders(data || []);
-    setLoading30Days(false);
+    setLoadingPopup(false);
   };
 
   const formatDate = (dateStr: string) => {
@@ -247,13 +221,13 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
                       <OrderCard key={order.id} order={order} />
                     ))}
 
-                    {/* Load More button — opens popup */}
+                    {/* See All Orders button — opens popup */}
                     {hasMore && (
                       <button
-                        onClick={openLoadMorePopup}
+                        onClick={openFullHistoryPopup}
                         className="w-full py-3 text-orange-500 font-semibold text-sm hover:bg-orange-50 rounded-lg transition-colors border border-orange-200"
                       >
-                        Load More
+                        See All Orders
                       </button>
                     )}
                   </>
@@ -281,11 +255,9 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
           <div className="bg-white rounded-xl max-w-md w-full max-h-[85vh] flex flex-col shadow-2xl animate-[scaleIn_200ms_ease-out]">
             {/* Popup Header */}
             <div className="sticky top-0 bg-white border-b px-5 py-4 flex items-center justify-between rounded-t-xl">
-              <h2 className="text-lg font-bold text-gray-800">
-                {is30DaysMode ? 'Last 30 Days' : 'Last 7 Days'}
-              </h2>
+              <h2 className="text-lg font-bold text-gray-800">All Orders (Last 30 Days)</h2>
               <button
-                onClick={() => { setShowPopup(false); setIs30DaysMode(false); }}
+                onClick={() => setShowPopup(false)}
                 className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
                 aria-label="Close"
               >
@@ -304,27 +276,9 @@ export default function Sidebar({ isOpen, onClose, profile, onLogout }: SidebarP
                   <p>No orders found</p>
                 </div>
               ) : (
-                <>
-                  {popupOrders.map((order) => (
-                    <OrderCard key={order.id} order={order} />
-                  ))}
-
-                  {/* See 30 days button */}
-                  {!is30DaysMode && !loading30Days && (
-                    <button
-                      onClick={fetch30Days}
-                      className="w-full py-3 text-orange-500 font-semibold text-sm hover:bg-orange-50 rounded-lg transition-colors border border-orange-200"
-                    >
-                      See Last 30 Days Orders
-                    </button>
-                  )}
-
-                  {loading30Days && (
-                    <div className="flex justify-center py-4">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500" />
-                    </div>
-                  )}
-                </>
+                popupOrders.map((order) => (
+                  <OrderCard key={order.id} order={order} />
+                ))
               )}
             </div>
           </div>
