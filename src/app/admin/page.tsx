@@ -122,12 +122,10 @@ export default function AdminPage() {
             osc.start(time);
             osc.stop(time + 0.4);
           };
-          // 5 loud beeps
-          playBeep(ctx.currentTime, 880);
-          playBeep(ctx.currentTime + 0.5, 1100);
-          playBeep(ctx.currentTime + 1.0, 880);
-          playBeep(ctx.currentTime + 1.5, 1100);
-          playBeep(ctx.currentTime + 2.0, 880);
+          // 4 loud beeps over 2 seconds
+          for (let i = 0; i < 4; i++) {
+            playBeep(ctx.currentTime + i * 0.5, i % 2 === 0 ? 880 : 1100);
+          }
         } catch {}
       }
       prevOrderCountRef.current = pendingCount;
