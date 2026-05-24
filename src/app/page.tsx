@@ -40,8 +40,17 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [showTerms, setShowTerms] = useState(false);
   const [orderError, setOrderError] = useState('');
+  const [toast, setToast] = useState('');
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
   const [activeCategory, setActiveCategory] = useState<'sweets' | 'meals' | 'farm_produce'>('sweets');
+
+  // Auto-dismiss toast after 4 seconds
+  useEffect(() => {
+    if (toast) {
+      const t = setTimeout(() => setToast(''), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [toast]);
 
   useEffect(() => {
     // Fetch dishes immediately (public, doesn't need auth)
@@ -98,10 +107,13 @@ export default function Home() {
   };
 
   const fetchDishes = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('dishes')
       .select('*')
       .order('created_at', { ascending: true });
+    if (error) {
+      setToast('Something went wrong. Please try again later.');
+    }
     setDishes(data || []);
     setIsLoading(false);
   };
@@ -339,6 +351,16 @@ export default function Home() {
             >
               OK
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Toast notification */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-[fadeIn_200ms_ease-out]">
+          <div className="bg-gray-800 text-white px-6 py-3 rounded-lg shadow-xl flex items-center gap-3 max-w-sm">
+            <span className="text-sm">{toast}</span>
+            <button onClick={() => setToast('')} className="text-gray-300 hover:text-white text-lg leading-none">&times;</button>
           </div>
         </div>
       )}
