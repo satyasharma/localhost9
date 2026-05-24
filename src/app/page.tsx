@@ -16,7 +16,22 @@ export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [dishes, setDishes] = useState<Dish[]>([]);
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('lh9_cart');
+        return saved ? JSON.parse(saved) : [];
+      } catch { return []; }
+    }
+    return [];
+  });
+
+  // Persist cart to localStorage on every change
+  useEffect(() => {
+    try {
+      localStorage.setItem('lh9_cart', JSON.stringify(cart));
+    } catch {}
+  }, [cart]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isOrderFormOpen, setIsOrderFormOpen] = useState(false);
@@ -171,6 +186,7 @@ export default function Home() {
     setIsOrderFormOpen(false);
     setIsConfirmationOpen(true);
     setCart([]);
+    try { localStorage.removeItem('lh9_cart'); } catch {}
   };
 
   const handleLogout = async () => {
@@ -179,6 +195,7 @@ export default function Home() {
     setCart([]);
     setIsSidebarOpen(false);
     setIsAuthenticated(false);
+    try { localStorage.removeItem('lh9_cart'); } catch {}
   };
 
   // Loading
