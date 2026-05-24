@@ -38,6 +38,25 @@ export default function AdminPage() {
   const [dishes, setDishes] = useState<{id: string; name: string; price: number; available: boolean}[]>([]);
   const [showDishes, setShowDishes] = useState(false);
   const prevOrderCountRef = useRef(0);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
+  // Unlock audio on first user interaction
+  useEffect(() => {
+    const unlock = () => {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      if (audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume();
+      }
+    };
+    document.addEventListener('click', unlock, { once: false });
+    document.addEventListener('touchstart', unlock, { once: false });
+    return () => {
+      document.removeEventListener('click', unlock);
+      document.removeEventListener('touchstart', unlock);
+    };
+  }, []);
 
   useEffect(() => {
     init();
@@ -85,8 +104,12 @@ export default function AdminPage() {
       const pendingCount = data.filter((o: AdminOrder) => o.status === 'pending').length;
       if (pendingCount > prevOrderCountRef.current) {
         try {
-          // Loud notification bell using Web Audio API
-          const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+          // Use pre-unlocked AudioContext
+          if (!audioCtxRef.current) {
+            audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+          }
+          const ctx = audioCtxRef.current;
+          if (ctx.state === 'suspended') await ctx.resume();
           const playBeep = (time: number, freq: number) => {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
@@ -94,12 +117,12 @@ export default function AdminPage() {
             gain.connect(ctx.destination);
             osc.frequency.value = freq;
             osc.type = 'sine';
-            gain.gain.setValueAtTime(0.8, time);
+            gain.gain.setValueAtTime(1.0, time);
             gain.gain.exponentialRampToValueAtTime(0.01, time + 0.4);
             osc.start(time);
             osc.stop(time + 0.4);
           };
-          // Play 3 beeps at different pitches for attention
+          // 5 loud beeps
           playBeep(ctx.currentTime, 880);
           playBeep(ctx.currentTime + 0.5, 1100);
           playBeep(ctx.currentTime + 1.0, 880);
