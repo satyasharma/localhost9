@@ -188,6 +188,10 @@ export default function Home() {
       console.error('Order error:', orderError);
       if (orderError.code === '42501') {
         setOrderError('You have placed too many orders recently. Please wait a while and try again.');
+      } else if (orderError.code === 'P0001') {
+        setOrderError('One or more items in your cart are no longer available. Please refresh and try again.');
+        setCart([]);
+        try { localStorage.removeItem('lh9_cart'); } catch {}
       } else {
         setOrderError('Failed to place order. Please try again.');
       }
