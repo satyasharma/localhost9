@@ -377,7 +377,7 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="text-center sm:text-left">
               <p className="text-sm font-medium text-gray-300">Service Hours</p>
-              <p className="text-sm text-gray-400">Saturday & Sunday</p>
+              <p className="text-sm text-gray-400">Everyday</p>
               <p className="text-sm text-gray-400">9:00 AM – 9:00 PM</p>
             </div>
             <div className="text-center">
@@ -432,7 +432,7 @@ export default function Home() {
             <div className="px-6 py-4 text-sm text-gray-700 space-y-4 leading-relaxed">
               <section>
                 <h3 className="font-bold text-gray-800 mb-1">Orders & Delivery</h3>
-                <p>Orders accepted during service hours (Sat & Sun, 9 AM – 9 PM). Delivery within 1 hour of acceptance. Available in Marathahalli, Whitefield, Mahadevpura, Indiranagar, and HAL areas only.</p>
+                <p>Orders accepted during service hours (Everyday, 9 AM – 9 PM). Delivery within 1 hour of acceptance. Available in Marathahalli, Whitefield, Mahadevpura, Indiranagar, and HAL areas only.</p>
               </section>
               <section>
                 <h3 className="font-bold text-gray-800 mb-1">Payment</h3>
