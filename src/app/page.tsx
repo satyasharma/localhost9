@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ShoppingBag, UtensilsCrossed, Sparkles } from 'lucide-react';
+import { ShoppingBag, UtensilsCrossed } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { cleanInput } from '@/lib/sanitize';
 import { Dish, CartItem, UserProfile } from '@/types';
@@ -233,31 +233,31 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
-      <header className="bg-gradient-to-r from-orange-500 to-red-500 shadow-lg sticky top-0 z-40">
+      <header className="bg-white shadow-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setIsSidebarOpen(true)}
-                className="w-9 h-9 bg-white/20 backdrop-blur text-white rounded-full flex items-center justify-center font-bold text-sm hover:bg-white/30 transition-colors"
+                className="w-9 h-9 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold text-sm hover:bg-orange-600 transition-colors"
                 aria-label="Open menu"
               >
                 {profile?.name?.charAt(0).toUpperCase() || 'U'}
               </button>
-              <UtensilsCrossed size={28} className="text-white" />
+              <UtensilsCrossed size={28} className="text-orange-500" />
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-white">localHost9</h1>
-                <p className="text-xs text-orange-100 hidden sm:block">Fresh from Kitchen & Farm</p>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-800">localHost9</h1>
+                <p className="text-xs text-gray-500 hidden sm:block">Fresh from Kitchen & Farm</p>
               </div>
             </div>
             <button
               onClick={() => setIsCartOpen(true)}
-              className="relative bg-white/20 backdrop-blur hover:bg-white/30 text-white p-3 rounded-full transition-all shadow-lg hover:scale-105 active:scale-95"
+              className="relative bg-orange-500 hover:bg-orange-600 text-white p-3 rounded-full transition-colors shadow-lg"
               aria-label={`Cart with ${cartItemCount} items`}
             >
               <ShoppingBag size={24} />
               {cartItemCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-white text-orange-500 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-md animate-bounce-in">
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
                   {cartItemCount}
                 </span>
               )}
@@ -267,43 +267,23 @@ export default function Home() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Hero Section */}
-        <div className="relative bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 rounded-2xl p-8 sm:p-12 mb-10 overflow-hidden shadow-xl">
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-4 right-8 text-6xl">🍛</div>
-            <div className="absolute bottom-4 left-8 text-6xl">🍬</div>
-            <div className="absolute top-1/2 right-1/4 text-4xl">🌿</div>
-          </div>
-          <div className="relative text-center text-white">
-            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur rounded-full px-4 py-1.5 mb-4">
-              <Sparkles size={14} />
-              <span className="text-xs font-medium">Homemade with love</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-bold mb-2">Fresh from Our Kitchen</h2>
-            <p className="text-orange-100 text-sm sm:text-base max-w-md mx-auto">
-              Authentic sweets, home-style meals & farm-fresh produce delivered to your door
-            </p>
-          </div>
+        <div className="text-center mb-6">
+          <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-4">Our Specials</h2>
         </div>
 
         {/* Category tabs */}
-        <div className="flex justify-center gap-2 sm:gap-4 mb-8 flex-wrap">
-          {([
-            { key: 'sweets', label: 'Sweets', icon: '🍬' },
-            { key: 'meals', label: 'Meals', icon: '🍛' },
-            { key: 'farm_produce', label: 'Farm Produce', icon: '🌿' },
-          ] as const).map((cat) => (
+        <div className="flex justify-center gap-3 mb-8 flex-wrap">
+          {(['sweets', 'meals', 'farm_produce'] as const).map((cat) => (
             <button
-              key={cat.key}
-              onClick={() => setActiveCategory(cat.key)}
-              className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
-                activeCategory === cat.key
-                  ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-200 scale-105'
-                  : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300 hover:shadow-md'
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors ${
+                activeCategory === cat
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'
               }`}
             >
-              <span className="text-base">{cat.icon}</span>
-              {cat.label}
+              {cat === 'sweets' ? 'Sweets' : cat === 'meals' ? 'Meals' : 'Farm Produce'}
             </button>
           ))}
         </div>
@@ -392,7 +372,7 @@ export default function Home() {
         </div>
       )}
 
-      <footer className="bg-gradient-to-b from-gray-800 to-gray-900 text-white py-10 mt-16">
+      <footer className="bg-gray-800 text-white py-8 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="text-center sm:text-left">
@@ -401,8 +381,8 @@ export default function Home() {
               <p className="text-sm text-gray-400">9:00 AM – 9:00 PM</p>
             </div>
             <div className="text-center">
-              <p className="text-xl font-bold bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">localHost9</p>
-              <p className="text-gray-400 text-sm mt-1">Root Access to Great Taste</p>
+              <p className="text-lg font-semibold">localHost9</p>
+              <p className="text-gray-400 text-sm">Root Access to Great Taste</p>
             </div>
             <div className="text-center sm:text-right">
               <div className="inline-flex items-center gap-3">
