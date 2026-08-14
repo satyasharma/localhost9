@@ -40,6 +40,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [showTerms, setShowTerms] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authIntent, setAuthIntent] = useState<'checkout' | 'general'>('general');
   const [orderError, setOrderError] = useState('');
   const [toast, setToast] = useState('');
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
@@ -151,6 +152,7 @@ export default function Home() {
 
   const handleCheckout = () => {
     if (!isAuthenticated) {
+      setAuthIntent('checkout');
       setShowAuthModal(true);
       return;
     }
@@ -247,7 +249,7 @@ export default function Home() {
                 </button>
               ) : (
                 <button
-                  onClick={() => setShowAuthModal(true)}
+                  onClick={() => { setAuthIntent('general'); setShowAuthModal(true); }}
                   className="text-sm bg-orange-500 text-white px-3 py-1.5 rounded-lg hover:bg-orange-600 transition-colors font-medium"
                 >
                   Sign in
@@ -494,9 +496,10 @@ export default function Home() {
             </button>
             <AuthScreen onSuccess={() => {
               setShowAuthModal(false);
-              // After successful login, proceed to checkout
-              setIsCartOpen(false);
-              setIsOrderFormOpen(true);
+              if (authIntent === 'checkout') {
+                setIsCartOpen(false);
+                setIsOrderFormOpen(true);
+              }
             }} />
           </div>
         </div>
