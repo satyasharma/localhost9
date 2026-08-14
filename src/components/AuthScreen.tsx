@@ -23,7 +23,7 @@ async function hashNonce(nonce: string): Promise<string> {
   return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
-export default function AuthScreen() {
+export default function AuthScreen({ onSuccess }: { onSuccess?: () => void } = {}) {
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
@@ -45,6 +45,7 @@ export default function AuthScreen() {
           nonce: nonceRef.current,
         });
         if (error) throw error;
+        if (onSuccess) onSuccess();
       } catch (err: any) {
         setError(err.message || 'Sign in failed. Please try again.');
         setSigningIn(false);

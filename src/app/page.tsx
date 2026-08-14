@@ -39,6 +39,7 @@ export default function Home() {
   const [displayOrderId, setDisplayOrderId] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [showTerms, setShowTerms] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [orderError, setOrderError] = useState('');
   const [toast, setToast] = useState('');
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
@@ -149,6 +150,10 @@ export default function Home() {
   };
 
   const handleCheckout = () => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
     setIsCartOpen(false);
     setIsOrderFormOpen(true);
   };
@@ -214,18 +219,13 @@ export default function Home() {
     try { localStorage.removeItem('lh9_cart'); } catch {}
   };
 
-  // Loading
-  if (isAuthenticated === null) {
+  // Loading — only show spinner briefly for initial session check
+  if (isAuthenticated === null && !dishes.length) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500" />
       </div>
     );
-  }
-
-  // Not signed in
-  if (!isAuthenticated) {
-    return <AuthScreen />;
   }
 
   // Main app
@@ -237,13 +237,22 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => setIsSidebarOpen(true)}
-                className="w-9 h-9 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold text-sm hover:bg-orange-600 transition-colors"
-                aria-label="Open menu"
-              >
-                {profile?.name?.charAt(0).toUpperCase() || 'U'}
-              </button>
+              {isAuthenticated ? (
+                <button
+                  onClick={() => setIsSidebarOpen(true)}
+                  className="w-9 h-9 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold text-sm hover:bg-orange-600 transition-colors"
+                  aria-label="Open menu"
+                >
+                  {profile?.name?.charAt(0).toUpperCase() || 'U'}
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowAuthModal(true)}
+                  className="text-sm bg-orange-500 text-white px-3 py-1.5 rounded-lg hover:bg-orange-600 transition-colors font-medium"
+                >
+                  Sign in
+                </button>
+              )}
               <UtensilsCrossed size={28} className="text-orange-500" />
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold text-gray-800">localHost9</h1>
@@ -468,6 +477,27 @@ export default function Home() {
                 I Acknowledge
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Auth Modal — shown when user tries to checkout without signing in */}
+      {showAuthModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 animate-[fadeIn_200ms_ease-out]">
+          <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-2 relative animate-[scaleIn_200ms_ease-out]">
+            <button
+              onClick={() => setShowAuthModal(false)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-2xl leading-none z-10"
+              aria-label="Close"
+            >
+              &times;
+            </button>
+            <AuthScreen onSuccess={() => {
+              setShowAuthModal(false);
+              // After successful login, proceed to checkout
+              setIsCartOpen(false);
+              setIsOrderFormOpen(true);
+            }} />
           </div>
         </div>
       )}
