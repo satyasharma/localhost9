@@ -72,26 +72,17 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
     setPhoneError(digits.length > 0 && digits.length < 10 ? 'Phone must be 10 digits' : '');
   };
 
-  const SERVICEABLE_PINCODES = [
-    '560037', '560066', '560048', '560038', '560017',
-    '560036', '560067', '560016', '560008', '560071', '560103',
-  ];
-
   const handlePincodeChange = (value: string) => {
     const digits = value.replace(/\D/g, '').slice(0, 6);
     setPincode(digits);
-    if (digits.length === 6) {
-      if (SERVICEABLE_PINCODES.includes(digits)) {
-        setPincodeError('');
-      } else {
-        setPincodeError('This area is currently outside our service zone. We will be expanding soon!');
-      }
+    if (digits.length > 0 && digits.length < 6) {
+      setPincodeError('Pin code must be 6 digits');
     } else {
       setPincodeError('');
     }
   };
 
-  const isPincodeValid = pincode.length === 6 && SERVICEABLE_PINCODES.includes(pincode);
+  const isPincodeValid = pincode.length === 6;
 
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -102,7 +93,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
       return;
     }
     if (showNewAddress && !isPincodeValid) {
-      setPincodeError('Please enter a valid serviceable pin code');
+      setPincodeError('Please enter a valid 6-digit pin code');
       return;
     }
     setIsSubmitting(true);
@@ -224,7 +215,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
                       <p className="text-red-500 text-xs mt-1">{pincodeError}</p>
                     )}
                     {isPincodeValid && (
-                      <p className="text-green-600 text-xs mt-1">✓ We deliver to this area</p>
+                      <p className="text-green-600 text-xs mt-1">✓ Valid pin code</p>
                     )}
                   </div>
                   {savedAddresses.length > 0 && (
