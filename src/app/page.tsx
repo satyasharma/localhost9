@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ShoppingBag, UtensilsCrossed } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { cleanInput } from '@/lib/sanitize';
@@ -14,6 +14,9 @@ import OrderConfirmation from '@/components/OrderConfirmation';
 
 export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  // Which account signedIn() has already handled. A ref (not state) so the
+  // auth listener always sees the current value and skips repeat events.
+  const signedInUserIdRef = useRef<string | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [dishes, setDishes] = useState<Dish[]>([]);
   const [cart, setCart] = useState<CartItem[]>(() => {
@@ -72,6 +75,7 @@ export default function Home() {
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
         signedIn(session.user);
       } else if (event === 'SIGNED_OUT') {
+        signedInUserIdRef.current = null;
         setIsAuthenticated(false);
         setProfile(null);
       }
@@ -81,8 +85,10 @@ export default function Home() {
   }, []);
 
   const signedIn = (user: any) => {
-    // Prevent double-processing
-    if (isAuthenticated) return;
+    // Prevent double-processing: Supabase fires SIGNED_IN again on tab focus
+    // and token refresh. Only run once per account.
+    if (signedInUserIdRef.current === user.id) return;
+    signedInUserIdRef.current = user.id;
 
     // Build profile from Google metadata — no DB call needed
     const p: UserProfile = {
@@ -103,7 +109,10 @@ export default function Home() {
     }, { onConflict: 'id' }).then(() => {});
 
     // Pre-fetch saved addresses
-    supabase.from('user_addresses').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).then(({ data }) => {
+    fetchSavedAddresses(user.id);
+  };
+  const fetchSavedAddresses = (userId: string) => {
+    supabase.from('user_addresses').select('*').eq('user_id', userId).order('created_at', { ascending: false }).then(({ data }) => {
       setSavedAddresses(data || []);
     });
   };
@@ -210,10 +219,14 @@ export default function Home() {
     setIsConfirmationOpen(true);
     setCart([]);
     try { localStorage.removeItem('lh9_cart'); } catch {}
+    // place_order saved a new address if a label was given; refresh the list
+    // so it shows up on the next order without a page reload.
+    if (orderData.addressLabel?.trim()) fetchSavedAddresses(profile.id);
   };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    signedInUserIdRef.current = null;
     setProfile(null);
     setCart([]);
     setIsSidebarOpen(false);
