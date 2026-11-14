@@ -75,7 +75,11 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
   const handlePincodeChange = (value: string) => {
     const digits = value.replace(/\D/g, '').slice(0, 6);
     setPincode(digits);
-    if (digits.length > 0 && digits.length < 6) {
+    setPincodeError('');
+  };
+
+  const handlePincodeBlur = () => {
+    if (pincode.length > 0 && pincode.length !== 6) {
       setPincodeError('Pin code must be 6 digits');
     } else {
       setPincodeError('');
@@ -205,6 +209,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
                       required
                       value={pincode}
                       onChange={(e) => handlePincodeChange(e.target.value)}
+                      onBlur={handlePincodeBlur}
                       className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm ${
                         pincodeError ? 'border-red-400' : 'border-gray-300'
                       }`}
@@ -213,9 +218,6 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
                     />
                     {pincodeError && (
                       <p className="text-red-500 text-xs mt-1">{pincodeError}</p>
-                    )}
-                    {isPincodeValid && (
-                      <p className="text-green-600 text-xs mt-1">✓ Valid pin code</p>
                     )}
                   </div>
                   {savedAddresses.length > 0 && (
