@@ -3,6 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 
 const ADMIN_EMAILS = ['satyasharma397@gmail.com'];
 
+// Statuses the admin page can set (forward, back one step, or reject).
+const ALLOWED_STATUSES = ['pending', 'accepted', 'delivered', 'rejected'];
+
 function getServiceClient() {
   return createClient(
     process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -37,7 +40,8 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const status = url.searchParams.get('status');
   const today = url.searchParams.get('today');
-  const offset = parseInt(url.searchParams.get('offset') || '0');
+  const parsedOffset = parseInt(url.searchParams.get('offset') || '0', 10);
+  const offset = Number.isFinite(parsedOffset) && parsedOffset > 0 ? parsedOffset : 0;
 
   let query = supabase.from('orders').select('*').order('created_at', { ascending: false });
 
@@ -60,7 +64,8 @@ export async function GET(request: NextRequest) {
   const { data, error } = await query.range(offset, offset + 49);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('admin orders GET failed:', error);
+    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
   }
 
   return NextResponse.json(data);
@@ -73,9 +78,15 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { orderId, status } = await request.json();
-  if (!orderId || !status) {
-    return NextResponse.json({ error: 'orderId and status required' }, { status: 400 });
+  let body: { orderId?: unknown; status?: unknown };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+  }
+  const { orderId, status } = body;
+  if (typeof orderId !== 'string' || !orderId || typeof status !== 'string' || !ALLOWED_STATUSES.includes(status)) {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 
   const supabase = getServiceClient();
@@ -92,7 +103,8 @@ export async function PATCH(request: NextRequest) {
     .eq('id', orderId);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('admin orders PATCH failed:', error);
+    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

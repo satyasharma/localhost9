@@ -29,7 +29,10 @@ export async function GET(request: NextRequest) {
   }
   const supabase = getServiceClient();
   const { data, error } = await supabase.from('dishes').select('*').order('created_at', { ascending: true });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('admin dishes GET failed:', error);
+    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
+  }
   return NextResponse.json(data);
 }
 
@@ -38,12 +41,21 @@ export async function PATCH(request: NextRequest) {
   if (!(await verifyAdmin(request))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const { dishId, available } = await request.json();
-  if (!dishId || typeof available !== 'boolean') {
-    return NextResponse.json({ error: 'dishId and available required' }, { status: 400 });
+  let body: { dishId?: unknown; available?: unknown };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+  }
+  const { dishId, available } = body;
+  if (typeof dishId !== 'string' || !dishId || typeof available !== 'boolean') {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
   const supabase = getServiceClient();
   const { error } = await supabase.from('dishes').update({ available }).eq('id', dishId);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('admin dishes PATCH failed:', error);
+    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
+  }
   return NextResponse.json({ success: true });
 }
