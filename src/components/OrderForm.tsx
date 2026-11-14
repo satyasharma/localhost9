@@ -191,6 +191,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
                       type="text"
                       value={addressLabel}
                       onChange={(e) => setAddressLabel(e.target.value)}
+                      maxLength={100}
                       placeholder="Label (e.g., Home, Office)"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
                     />
@@ -199,6 +200,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
                     required
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
+                    maxLength={990}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                     placeholder="Enter your complete delivery address"
                     rows={3}
@@ -265,6 +267,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
+                maxLength={1000}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 placeholder="Any special requests?"
                 rows={2}

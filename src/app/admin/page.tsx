@@ -94,7 +94,10 @@ export default function AdminPage() {
   const fetchOrders = useCallback(async (pageNum?: number) => {
     setLoading(true);
     const token = await getToken();
-    if (!token) return;
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     const offset = (pageNum ?? page) * PAGE_SIZE;
     const res = await fetch(`/api/admin/orders?today=true&offset=${offset}`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -336,7 +339,7 @@ export default function AdminPage() {
           <span className="text-sm text-gray-500">Page {page + 1}</span>
           <button
             onClick={() => { const p = page + 1; setPage(p); fetchOrders(p); }}
-            disabled={filtered.length < PAGE_SIZE}
+            disabled={orders.length < PAGE_SIZE}
             className="px-4 py-2 bg-white rounded-lg text-sm font-medium disabled:opacity-30"
           >
             Next →
