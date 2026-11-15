@@ -26,6 +26,8 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="icon" href="/favicon.svg" />
+        {/* Menu data and login come from Supabase; connect early. */}
+        <link rel="preconnect" href="https://dsorrxddwuzjwjfkwfew.supabase.co" crossOrigin="anonymous" />
       </head>
       <body className={inter.className}>
         <ErrorBoundary>{children}</ErrorBoundary>

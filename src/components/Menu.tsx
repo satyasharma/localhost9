@@ -17,7 +17,7 @@ export default function Menu({ dishes, cart, onAddToCart, onUpdateQuantity }: Me
 
   return (
     <div className="flex flex-wrap justify-center gap-6">
-      {dishes.map((dish) => {
+      {dishes.map((dish, index) => {
         const cartItem = getCartItem(dish.id);
         const quantity = cartItem?.quantity || 0;
 
@@ -26,11 +26,12 @@ export default function Menu({ dishes, cart, onAddToCart, onUpdateQuantity }: Me
             key={dish.id}
             className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 w-full max-w-sm"
           >
-            <div className="relative aspect-[5/3] overflow-hidden">
+            <div className="relative aspect-[5/3] overflow-hidden bg-gray-100">
               <Image
                 src={dish.image_url}
                 alt={dish.name}
                 fill
+                priority={index === 0}
                 className="object-cover transform hover:scale-110 transition-transform duration-300"
                 sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
               />

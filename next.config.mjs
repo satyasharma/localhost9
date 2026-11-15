@@ -4,17 +4,21 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isDev = process.env.NODE_ENV !== 'production';
 
+// The only Supabase project this site uses (database, auth, dish photos).
+const SUPABASE_HOST = 'dsorrxddwuzjwjfkwfew.supabase.co';
+
 // Content Security Policy.
 // 'unsafe-inline' for scripts/styles is required by Next.js inline bootstrap
 // scripts and Tailwind/React inline styles unless nonces are set up.
+// Razorpay is not used yet (UPI "coming soon"); add its hosts back when it is.
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval' " : ''}https://accounts.google.com https://checkout.razorpay.com`,
+  `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval' " : ''}https://accounts.google.com`,
   "style-src 'self' 'unsafe-inline' https://accounts.google.com",
-  "img-src 'self' data: blob: https://images.pexels.com https://*.supabase.co https://*.googleusercontent.com",
+  `img-src 'self' data: blob: https://${SUPABASE_HOST} https://*.googleusercontent.com`,
   "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com https://api.razorpay.com https://lumberjack.razorpay.com",
-  "frame-src https://accounts.google.com https://api.razorpay.com https://checkout.razorpay.com",
+  `connect-src 'self' https://${SUPABASE_HOST} wss://${SUPABASE_HOST} https://accounts.google.com`,
+  "frame-src https://accounts.google.com",
   "frame-ancestors 'none'",
   "object-src 'none'",
   "base-uri 'self'",
@@ -40,11 +44,8 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'images.pexels.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.supabase.co',
+        hostname: SUPABASE_HOST,
+        pathname: '/storage/v1/object/public/**',
       },
     ],
   },
