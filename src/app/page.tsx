@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { ShoppingBag, User, MapPin, Clock, Banknote } from 'lucide-react';
+import { ShoppingBag, User, MapPin, Clock, Banknote, ArrowRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { cleanInput } from '@/lib/sanitize';
 import { Dish, CartItem, UserProfile } from '@/types';
@@ -499,7 +499,7 @@ export default function Home() {
           tabIndex={showCartBar ? 0 : -1}
           className="h-11 px-4 rounded-xl bg-white/15 hover:bg-white/25 font-bold text-[15px] inline-flex items-center gap-1.5 transition-colors"
         >
-          View cart <span aria-hidden="true">→</span>
+          View cart <ArrowRight size={18} strokeWidth={2.5} aria-hidden="true" />
         </button>
       </div>
 
