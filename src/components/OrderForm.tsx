@@ -118,6 +118,21 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
     setEditingId('');
   };
 
+  const addressToDelete = savedAddresses.find(a => a.id === confirmDeleteId) || null;
+
+  const closeDeletePrompt = () => {
+    setConfirmDeleteId('');
+    setRowError(null);
+  };
+
+  // Escape closes the delete popup (unless a delete is in progress).
+  useEffect(() => {
+    if (!confirmDeleteId) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !busyId) closeDeletePrompt(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [confirmDeleteId, busyId]);
+
   const deleteAddress = async (addr: UserAddress) => {
     if (!profile || busyId) return;
     setBusyId(addr.id);
@@ -260,7 +275,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
 
               {savedAddresses.length > 0 && !showNewAddress && (
                 <div className="mb-4">
-                  <div className={`space-y-2 mb-3 ${editingId || confirmDeleteId ? '' : 'max-h-72 overflow-y-auto'}`}>
+                  <div className={`space-y-2 mb-3 ${editingId ? '' : 'max-h-72 overflow-y-auto'}`}>
                     {savedAddresses.map((addr) => {
                       const isSelected = selectedAddressId === addr.id;
                       const isBusy = busyId === addr.id;
@@ -355,38 +370,12 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
                                   onClick={() => { setEditingId(''); setRowError(null); setConfirmDeleteId(addr.id); }}
                                   disabled={!!busyId}
                                   aria-label={`Delete ${addr.label}`}
-                                  className="w-10 h-10 inline-flex items-center justify-center rounded-full text-muted hover:text-red-600 hover:bg-sand disabled:opacity-50 transition-colors"
+                                  className="w-10 h-10 inline-flex items-center justify-center rounded-full text-muted hover:text-brand-hover hover:bg-sand disabled:opacity-50 transition-colors"
                                 >
                                   <Trash2 size={16} />
                                 </button>
                               </div>
                             </div>
-                          )}
-                          {confirmDeleteId === addr.id && editingId !== addr.id && (
-                            <div className="flex items-center justify-between gap-2 border-t border-line px-3 py-2">
-                              <span className="text-sm text-ink">Delete this address?</span>
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => setConfirmDeleteId('')}
-                                  disabled={isBusy}
-                                  className="h-9 px-3 rounded-lg border border-line text-ink text-sm font-semibold hover:bg-cream disabled:opacity-50 transition-colors"
-                                >
-                                  No
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => deleteAddress(addr)}
-                                  disabled={isBusy}
-                                  className="h-9 px-3 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-bold disabled:opacity-60 transition-colors"
-                                >
-                                  {isBusy ? 'Deleting…' : 'Yes, delete'}
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                          {rowError?.id === addr.id && (
-                            <p className="text-red-500 text-xs px-3 pb-2" role="alert">{rowError.message}</p>
                           )}
                         </div>
                       );
@@ -521,6 +510,52 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
           </form>
         </div>
       </div>
+
+      {/* Delete-address confirmation popup (sits above the order form) */}
+      {addressToDelete && (
+        <div
+          className="fixed inset-0 z-[60] bg-ink/45 flex items-center justify-center p-4 animate-[fadeIn_150ms_ease-out]"
+          onClick={() => { if (!busyId) closeDeletePrompt(); }}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-address-title"
+            aria-describedby="delete-address-text"
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl animate-[scaleIn_150ms_ease-out]"
+          >
+            <h3 id="delete-address-title" className="text-lg font-bold text-ink">Delete this address?</h3>
+            <div id="delete-address-text" className="mt-2 rounded-lg bg-cream border border-line p-3">
+              <div className="font-semibold text-ink break-words">{addressToDelete.label}</div>
+              <div className="text-sm text-muted break-words line-clamp-3">{addressToDelete.full_address}</div>
+            </div>
+            <p className="text-xs text-muted mt-2">Your past orders won’t change.</p>
+            {rowError?.id === addressToDelete.id && (
+              <p className="text-red-500 text-sm mt-2" role="alert">{rowError.message}</p>
+            )}
+            <div className="flex gap-2 mt-4">
+              <button
+                type="button"
+                autoFocus
+                onClick={closeDeletePrompt}
+                disabled={!!busyId}
+                className="flex-1 h-11 rounded-lg border border-line text-ink text-sm font-semibold hover:bg-cream disabled:opacity-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => deleteAddress(addressToDelete)}
+                disabled={!!busyId}
+                className="flex-1 h-11 rounded-lg bg-brand-hover hover:bg-ink text-white text-sm font-bold disabled:opacity-60 transition-colors"
+              >
+                {busyId === addressToDelete.id ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

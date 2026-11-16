@@ -487,7 +487,7 @@ export default function Home() {
       {/* Sticky "View cart" bar once something is in the cart */}
       <div
         aria-live="polite"
-        className={`fixed inset-x-3 bottom-[calc(12px+env(safe-area-inset-bottom))] z-30 mx-auto max-w-[520px] h-[60px] rounded-2xl bg-brand text-white shadow-[0_10px_30px_rgba(43,27,18,.25)] flex items-center justify-between pl-[18px] pr-2 transition-transform duration-200 ${
+        className={`fixed inset-x-3 bottom-[calc(12px+env(safe-area-inset-bottom))] z-30 mx-auto max-w-[520px] h-[60px] rounded-2xl bg-brand text-white shadow-[0_10px_30px_rgba(43,27,18,.25)] flex items-center justify-between pl-[18px] pr-2 transition-transform duration-[260ms] ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform motion-reduce:transition-none ${
           showCartBar ? 'translate-y-0' : 'translate-y-[140%] pointer-events-none'
         }`}
       >

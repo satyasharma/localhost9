@@ -31,7 +31,7 @@ export default function Cart({ cart, isOpen, onClose, onUpdateQuantity, onRemove
   return (
     <>
       <div
-        className={`fixed inset-0 bg-ink/45 z-50 transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`fixed inset-0 bg-ink/45 z-50 transition-opacity duration-[260ms] ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={onClose}
       />
       {/* Phones: bottom sheet. Laptops: side panel. */}
@@ -40,7 +40,7 @@ export default function Cart({ cart, isOpen, onClose, onUpdateQuantity, onRemove
         aria-modal="true"
         aria-label="Your cart"
         aria-hidden={!isOpen}
-        className={`fixed z-50 bg-white flex flex-col shadow-2xl transition-transform duration-300 ease-out
+        className={`fixed z-50 bg-white flex flex-col shadow-2xl transition-transform duration-[260ms] ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform motion-reduce:transition-none
           inset-x-0 bottom-0 max-h-[86vh] rounded-t-3xl
           md:inset-x-auto md:right-0 md:top-0 md:h-full md:max-h-none md:w-[420px] md:rounded-none
           ${isOpen ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-y-0 md:translate-x-full'}`}
@@ -86,7 +86,7 @@ export default function Cart({ cart, isOpen, onClose, onUpdateQuantity, onRemove
                   </div>
                   <button
                     onClick={() => onRemoveItem(item.id)}
-                    className="w-10 h-10 inline-flex items-center justify-center rounded-full text-muted hover:text-red-600 hover:bg-sand transition-colors"
+                    className="w-10 h-10 inline-flex items-center justify-center rounded-full text-muted hover:text-brand-hover hover:bg-sand transition-colors"
                     aria-label={`Remove ${item.name} from cart`}
                   >
                     <Trash2 size={18} />
