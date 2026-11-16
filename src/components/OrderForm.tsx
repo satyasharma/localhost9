@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, MapPin, Phone, FileText, Plus } from 'lucide-react';
+import { X, MapPin, Phone, FileText, Plus, Pencil, Trash2 } from 'lucide-react';
 import { CartItem, UserProfile, UserAddress } from '@/types';
 import { supabase } from '@/lib/supabase';
 
@@ -11,6 +11,8 @@ interface OrderFormProps {
   cart: CartItem[];
   profile: UserProfile | null;
   savedAddresses: UserAddress[];
+  // Keeps the page's copy of saved addresses in sync after an edit or delete.
+  onSavedAddressesChange?: (addresses: UserAddress[]) => void;
   onSubmitOrder: (orderData: {
     address: string;
     phone: string;
@@ -19,7 +21,12 @@ interface OrderFormProps {
   }) => void;
 }
 
-export default function OrderForm({ isOpen, onClose, cart, profile, savedAddresses: prefetchedAddresses, onSubmitOrder }: OrderFormProps) {
+// Same limits the database enforces for saved addresses.
+const MAX_LABEL = 100;
+const MAX_FULL_ADDRESS = 1000;
+const ADDRESS_ERROR = 'Couldn’t save. Please try again.';
+
+export default function OrderForm({ isOpen, onClose, cart, profile, savedAddresses: prefetchedAddresses, onSavedAddressesChange, onSubmitOrder }: OrderFormProps) {
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
@@ -31,6 +38,15 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
   const [showNewAddress, setShowNewAddress] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [phoneError, setPhoneError] = useState('');
+  // Saved-address edit / delete
+  const [editingId, setEditingId] = useState('');
+  const [editLabel, setEditLabel] = useState('');
+  const [editAddress, setEditAddress] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editError, setEditError] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState('');
+  const [busyId, setBusyId] = useState('');
+  const [rowError, setRowError] = useState<{ id: string; message: string } | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -42,6 +58,96 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
       }
     }
   }, [isOpen, prefetchedAddresses, profile]);
+
+  // Close any open edit / delete prompt whenever the form is opened or closed.
+  useEffect(() => {
+    setEditingId('');
+    setConfirmDeleteId('');
+    setEditError('');
+    setRowError(null);
+    setBusyId('');
+  }, [isOpen]);
+
+  const updateAddressList = (next: UserAddress[]) => {
+    setSavedAddresses(next);
+    onSavedAddressesChange?.(next);
+    if (next.length === 0) setShowNewAddress(true);
+  };
+
+  const startEdit = (addr: UserAddress) => {
+    setConfirmDeleteId('');
+    setRowError(null);
+    setEditError('');
+    setEditingId(addr.id);
+    setEditLabel(addr.label);
+    setEditAddress(addr.full_address);
+    setEditPhone((addr.phone || '').replace(/^\+91/, '').replace(/\D/g, '').slice(0, 10));
+  };
+
+  const cancelEdit = () => {
+    setEditingId('');
+    setEditError('');
+  };
+
+  const saveEdit = async (addr: UserAddress) => {
+    if (!profile || busyId) return;
+    const label = editLabel.trim();
+    const fullAddress = editAddress.trim();
+    if (!label || label.length > MAX_LABEL) { setEditError('Please enter a label (up to 100 characters).'); return; }
+    if (!fullAddress || fullAddress.length > MAX_FULL_ADDRESS) { setEditError('Please enter the full address (up to 1000 characters).'); return; }
+    if (editPhone.length !== 10) { setEditError('Phone must be 10 digits.'); return; }
+    setBusyId(addr.id);
+    setEditError('');
+    const { data, error } = await supabase
+      .from('user_addresses')
+      .update({ label, full_address: fullAddress, phone: `+91${editPhone}` })
+      .eq('id', addr.id)
+      .eq('user_id', profile.id)
+      .select('*');
+    setBusyId('');
+    if (error || !data || data.length !== 1) {
+      setEditError(ADDRESS_ERROR);
+      return;
+    }
+    const updated = data[0] as UserAddress;
+    updateAddressList(savedAddresses.map(a => (a.id === addr.id ? updated : a)));
+    if (selectedAddressId === addr.id) {
+      setAddress(updated.full_address);
+      setPhone(editPhone);
+    }
+    setEditingId('');
+  };
+
+  const deleteAddress = async (addr: UserAddress) => {
+    if (!profile || busyId) return;
+    setBusyId(addr.id);
+    setRowError(null);
+    const { data, error } = await supabase
+      .from('user_addresses')
+      .delete()
+      .eq('id', addr.id)
+      .eq('user_id', profile.id)
+      .select('id');
+    setBusyId('');
+    if (error || !data || data.length !== 1) {
+      setRowError({ id: addr.id, message: 'Couldn’t delete. Please try again.' });
+      return;
+    }
+    setConfirmDeleteId('');
+    if (selectedAddressId === addr.id) {
+      setSelectedAddressId('');
+      setAddress('');
+    }
+    updateAddressList(savedAddresses.filter(a => a.id !== addr.id));
+  };
+
+  // Enter inside an edit field saves the edit instead of submitting the order.
+  const onEditKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, addr: UserAddress) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveEdit(addr);
+    }
+  };
 
   const loadAddresses = async () => {
     if (!profile) return;
@@ -92,6 +198,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (editingId || busyId) return; // finish or cancel the address edit first
     if (phone.length !== 10) {
       setPhoneError('Phone must be 10 digits');
       return;
@@ -153,25 +260,137 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
 
               {savedAddresses.length > 0 && !showNewAddress && (
                 <div className="mb-4">
-                  <div className="space-y-2 mb-3 max-h-48 overflow-y-auto">
-                    {savedAddresses.map((addr) => (
-                      <button
-                        key={addr.id}
-                        type="button"
-                        onClick={() => handleSelectAddress(addr)}
-                        className={`w-full text-left p-3 rounded-lg border-2 transition-all ${
-                          selectedAddressId === addr.id
-                            ? 'border-brand bg-brand-soft'
-                            : 'border-line hover:border-muted bg-white'
-                        }`}
-                      >
-                        <div className="font-semibold text-ink">{addr.label}</div>
-                        <div className="text-sm text-muted">{addr.full_address}</div>
-                        {addr.phone && (
-                          <div className="text-xs text-muted mt-1">📞 {addr.phone}</div>
-                        )}
-                      </button>
-                    ))}
+                  <div className={`space-y-2 mb-3 ${editingId || confirmDeleteId ? '' : 'max-h-72 overflow-y-auto'}`}>
+                    {savedAddresses.map((addr) => {
+                      const isSelected = selectedAddressId === addr.id;
+                      const isBusy = busyId === addr.id;
+                      return (
+                        <div
+                          key={addr.id}
+                          className={`rounded-lg border-2 transition-colors ${
+                            isSelected ? 'border-brand bg-brand-soft' : 'border-line bg-white'
+                          }`}
+                        >
+                          {editingId === addr.id ? (
+                            <div className="p-3 space-y-2">
+                              <input
+                                type="text"
+                                value={editLabel}
+                                onChange={(e) => setEditLabel(e.target.value)}
+                                onKeyDown={(e) => onEditKeyDown(e, addr)}
+                                maxLength={MAX_LABEL}
+                                placeholder="Label (e.g., Home, Office)"
+                                aria-label="Address label"
+                                className="w-full px-3 py-2 border border-line rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent text-sm bg-white"
+                              />
+                              <textarea
+                                value={editAddress}
+                                onChange={(e) => setEditAddress(e.target.value)}
+                                maxLength={MAX_FULL_ADDRESS}
+                                rows={3}
+                                placeholder="Full address with pin code"
+                                aria-label="Full address"
+                                className="w-full px-3 py-2 border border-line rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent text-sm bg-white"
+                              />
+                              <div className="flex gap-2">
+                                <span className="flex-none flex items-center px-3 bg-sand rounded-lg text-muted text-sm font-medium">+91</span>
+                                <input
+                                  type="tel"
+                                  value={editPhone}
+                                  onChange={(e) => setEditPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                                  onKeyDown={(e) => onEditKeyDown(e, addr)}
+                                  maxLength={10}
+                                  placeholder="10-digit number"
+                                  aria-label="Phone for this address"
+                                  className="flex-1 min-w-0 w-full px-3 py-2 border border-line rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent text-sm bg-white"
+                                />
+                              </div>
+                              {editError && <p className="text-red-500 text-xs" role="alert">{editError}</p>}
+                              <p className="text-xs text-muted">Changes apply to future orders only.</p>
+                              <div className="flex justify-end gap-2 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={cancelEdit}
+                                  disabled={isBusy}
+                                  className="h-10 px-4 rounded-lg border border-line text-ink text-sm font-semibold hover:bg-cream disabled:opacity-50 transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => saveEdit(addr)}
+                                  disabled={isBusy}
+                                  className="h-10 px-4 rounded-lg bg-brand hover:bg-brand-hover text-white text-sm font-bold disabled:opacity-60 transition-colors"
+                                >
+                                  {isBusy ? 'Saving…' : 'Save'}
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-start">
+                              <button
+                                type="button"
+                                onClick={() => handleSelectAddress(addr)}
+                                aria-pressed={isSelected}
+                                className="flex-1 min-w-0 text-left p-3"
+                              >
+                                <div className="font-semibold text-ink break-words">{addr.label}</div>
+                                <div className="text-sm text-muted break-words">{addr.full_address}</div>
+                                {addr.phone && (
+                                  <div className="text-xs text-muted mt-1">📞 {addr.phone}</div>
+                                )}
+                              </button>
+                              <div className="flex-none flex gap-1 p-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => startEdit(addr)}
+                                  disabled={!!busyId}
+                                  aria-label={`Edit ${addr.label}`}
+                                  className="w-10 h-10 inline-flex items-center justify-center rounded-full text-muted hover:text-ink hover:bg-sand disabled:opacity-50 transition-colors"
+                                >
+                                  <Pencil size={16} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => { setEditingId(''); setRowError(null); setConfirmDeleteId(addr.id); }}
+                                  disabled={!!busyId}
+                                  aria-label={`Delete ${addr.label}`}
+                                  className="w-10 h-10 inline-flex items-center justify-center rounded-full text-muted hover:text-red-600 hover:bg-sand disabled:opacity-50 transition-colors"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                          {confirmDeleteId === addr.id && editingId !== addr.id && (
+                            <div className="flex items-center justify-between gap-2 border-t border-line px-3 py-2">
+                              <span className="text-sm text-ink">Delete this address?</span>
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setConfirmDeleteId('')}
+                                  disabled={isBusy}
+                                  className="h-9 px-3 rounded-lg border border-line text-ink text-sm font-semibold hover:bg-cream disabled:opacity-50 transition-colors"
+                                >
+                                  No
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => deleteAddress(addr)}
+                                  disabled={isBusy}
+                                  className="h-9 px-3 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-bold disabled:opacity-60 transition-colors"
+                                >
+                                  {isBusy ? 'Deleting…' : 'Yes, delete'}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                          {rowError?.id === addr.id && (
+                            <p className="text-red-500 text-xs px-3 pb-2" role="alert">{rowError.message}</p>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                   <button
                     type="button"
@@ -242,13 +461,13 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
                 Contact Number (for delivery)
               </label>
               <div className="flex gap-2">
-                <span className="flex items-center px-3 bg-sand rounded-lg text-muted text-sm font-medium">+91</span>
+                <span className="flex-none flex items-center px-3 bg-sand rounded-lg text-muted text-sm font-medium">+91</span>
                 <input
                   type="tel"
                   required
                   value={phone}
                   onChange={(e) => handlePhoneChange(e.target.value)}
-                  className={`flex-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent ${
+                  className={`flex-1 min-w-0 w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent ${
                     phoneError ? 'border-red-400' : 'border-line'
                   }`}
                   placeholder="10-digit number"
@@ -291,11 +510,14 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
             {/* Submit */}
             <button
               type="submit"
-              disabled={isSubmitting || !address.trim() || phone.length !== 10 || (showNewAddress && !isPincodeValid)}
+              disabled={isSubmitting || !!editingId || !!busyId || !address.trim() || phone.length !== 10 || (showNewAddress && !isPincodeValid)}
               className="w-full bg-brand hover:bg-brand-hover disabled:bg-brand/40 text-white py-4 rounded-lg font-bold text-lg transition-colors shadow-lg"
             >
-              {isSubmitting ? 'Placing Order...' : `Place Order - ₹${total % 1 === 0 ? total.toFixed(0) : total.toFixed(2)}`}
+              {isSubmitting ? 'Placing order…' : `Place order · ₹${total % 1 === 0 ? total.toFixed(0) : total.toFixed(2)}`}
             </button>
+            {editingId && (
+              <p className="text-xs text-muted text-center -mt-2">Save or cancel the address edit to place your order.</p>
+            )}
           </form>
         </div>
       </div>

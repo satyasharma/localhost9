@@ -405,6 +405,7 @@ export default function Home() {
         cart={cart}
         profile={profile}
         savedAddresses={savedAddresses}
+        onSavedAddressesChange={setSavedAddresses}
         onSubmitOrder={handleSubmitOrder}
       />
 
