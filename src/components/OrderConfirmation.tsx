@@ -21,15 +21,15 @@ export default function OrderConfirmation({ isOpen, displayOrderId, onClose }: O
         <div className="mb-6 flex justify-center">
           <CheckCircle size={80} className="text-green-500" />
         </div>
-        <h2 className="text-3xl font-bold text-gray-800 mb-4">Order Placed!</h2>
-        <p className="text-gray-600 mb-6">Your order has been placed successfully.</p>
+        <h2 className="text-3xl font-bold text-ink mb-4">Order Placed!</h2>
+        <p className="text-muted mb-6">Your order has been placed successfully.</p>
 
-        <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-6 mb-6 border-2 border-orange-200">
-          <p className="text-sm text-gray-600 mb-2 font-semibold">YOUR ORDER NUMBER</p>
-          <p className="text-3xl font-bold text-orange-600 font-mono mb-3 break-all">{displayOrderId}</p>
+        <div className="bg-brand-soft rounded-lg p-6 mb-6 border-2 border-line">
+          <p className="text-sm text-muted mb-2 font-semibold">YOUR ORDER NUMBER</p>
+          <p className="text-3xl font-bold text-brand font-mono mb-3 break-all">{displayOrderId}</p>
           <button
             onClick={copyToClipboard}
-            className="text-sm px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors font-semibold"
+            className="text-sm px-4 py-2 bg-brand hover:bg-brand-hover text-white rounded-lg transition-colors font-semibold"
           >
             Copy Order Number
           </button>
@@ -37,7 +37,7 @@ export default function OrderConfirmation({ isOpen, displayOrderId, onClose }: O
 
         <button
           onClick={onClose}
-          className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg font-semibold transition-colors"
+          className="w-full bg-brand hover:bg-brand-hover text-white py-3 rounded-lg font-semibold transition-colors"
         >
           Continue Ordering
         </button>

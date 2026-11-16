@@ -122,16 +122,16 @@ export default function AuthScreen({ onSuccess }: { onSuccess?: () => void } = {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-cream flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">localHost9</h1>
-          <p className="text-sm text-gray-500 mt-1">Root Access to Great Taste</p>
+          <h1 className="text-3xl font-bold text-ink">localHost9</h1>
+          <p className="text-sm text-muted mt-1">Root Access to Great Taste</p>
         </div>
 
         {signingIn ? (
           <div className="text-center py-4">
-            <p className="text-gray-600">Signing you in...</p>
+            <p className="text-muted">Signing you in...</p>
           </div>
         ) : (
           <>
@@ -140,7 +140,7 @@ export default function AuthScreen({ onSuccess }: { onSuccess?: () => void } = {
                 <p className="text-red-500 text-sm text-center mb-2">{error}</p>
                 <button
                   onClick={fallbackRedirect}
-                  className="w-full text-sm text-orange-500 font-semibold hover:underline"
+                  className="w-full text-sm text-brand font-semibold hover:underline"
                 >
                   Try another way
                 </button>
@@ -154,7 +154,7 @@ export default function AuthScreen({ onSuccess }: { onSuccess?: () => void } = {
             <button
               onClick={handleClick}
               disabled={!ready}
-              className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 hover:bg-gray-50 py-3 px-4 rounded-lg font-medium text-gray-700 transition-colors disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-3 bg-white border border-line hover:bg-cream py-3 px-4 rounded-lg font-medium text-ink transition-colors disabled:opacity-50"
             >
               <svg viewBox="0 0 24 24" width="20" height="20">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

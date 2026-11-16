@@ -118,9 +118,9 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 animate-[fadeIn_200ms_ease-out]">
       <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-[scaleIn_200ms_ease-out]">
-        <div className="sticky top-0 bg-orange-500 text-white p-6 flex items-center justify-between rounded-t-xl z-10">
+        <div className="sticky top-0 bg-brand text-white p-6 flex items-center justify-between rounded-t-xl z-10">
           <h2 className="text-2xl font-bold">Complete Your Order</h2>
-          <button onClick={onClose} className="hover:bg-orange-600 p-2 rounded-full transition-colors" aria-label="Close">
+          <button onClick={onClose} className="hover:bg-brand-hover p-2 rounded-full transition-colors" aria-label="Close">
             <X size={24} />
           </button>
         </div>
@@ -129,7 +129,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
           {/* Order Summary */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-3">Order Summary</h3>
-            <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+            <div className="bg-cream rounded-lg p-4 space-y-2">
               {cart.map((item) => (
                 <div key={item.id} className="flex justify-between">
                   <span>{item.name} × {item.quantity}</span>
@@ -138,7 +138,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
               ))}
               <div className="border-t pt-2 mt-2 flex justify-between text-lg font-bold">
                 <span>Total:</span>
-                <span className="text-green-600">₹{total % 1 === 0 ? total.toFixed(0) : total.toFixed(2)}</span>
+                <span className="text-ink">₹{total % 1 === 0 ? total.toFixed(0) : total.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -146,7 +146,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Delivery Address */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
+              <label className="block text-sm font-semibold text-ink mb-3">
                 <MapPin size={16} className="inline mr-2" />
                 Delivery Address
               </label>
@@ -161,14 +161,14 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
                         onClick={() => handleSelectAddress(addr)}
                         className={`w-full text-left p-3 rounded-lg border-2 transition-all ${
                           selectedAddressId === addr.id
-                            ? 'border-orange-500 bg-orange-50'
-                            : 'border-gray-300 hover:border-gray-400 bg-white'
+                            ? 'border-brand bg-brand-soft'
+                            : 'border-line hover:border-muted bg-white'
                         }`}
                       >
-                        <div className="font-semibold text-gray-800">{addr.label}</div>
-                        <div className="text-sm text-gray-600">{addr.full_address}</div>
+                        <div className="font-semibold text-ink">{addr.label}</div>
+                        <div className="text-sm text-muted">{addr.full_address}</div>
                         {addr.phone && (
-                          <div className="text-xs text-gray-400 mt-1">📞 {addr.phone}</div>
+                          <div className="text-xs text-muted mt-1">📞 {addr.phone}</div>
                         )}
                       </button>
                     ))}
@@ -176,7 +176,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
                   <button
                     type="button"
                     onClick={() => { setShowNewAddress(true); setSelectedAddressId(''); setAddress(''); setAddressLabel(''); }}
-                    className="w-full py-2 px-4 border border-orange-500 text-orange-500 rounded-lg hover:bg-orange-50 font-semibold flex items-center justify-center gap-2 transition-colors"
+                    className="w-full py-2 px-4 border border-brand text-brand rounded-lg hover:bg-brand-soft font-semibold flex items-center justify-center gap-2 transition-colors"
                   >
                     <Plus size={18} />
                     Add New Address
@@ -193,7 +193,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
                       onChange={(e) => setAddressLabel(e.target.value)}
                       maxLength={100}
                       placeholder="Label (e.g., Home, Office)"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+                      className="w-full px-4 py-2 border border-line rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent text-sm"
                     />
                   </div>
                   <textarea
@@ -201,7 +201,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                     maxLength={990}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-line rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent"
                     placeholder="Enter your complete delivery address"
                     rows={3}
                   />
@@ -212,8 +212,8 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
                       value={pincode}
                       onChange={(e) => handlePincodeChange(e.target.value)}
                       onBlur={handlePincodeBlur}
-                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm ${
-                        pincodeError ? 'border-red-400' : 'border-gray-300'
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent text-sm ${
+                        pincodeError ? 'border-red-400' : 'border-line'
                       }`}
                       placeholder="Pin code (6 digits)"
                       maxLength={6}
@@ -226,7 +226,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
                     <button
                       type="button"
                       onClick={() => setShowNewAddress(false)}
-                      className="text-sm text-orange-500 font-semibold mt-1 hover:underline"
+                      className="text-sm text-brand font-semibold mt-1 hover:underline"
                     >
                       Use saved address instead
                     </button>
@@ -237,19 +237,19 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
 
             {/* Phone for this delivery */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-ink mb-2">
                 <Phone size={16} className="inline mr-2" />
                 Contact Number (for delivery)
               </label>
               <div className="flex gap-2">
-                <span className="flex items-center px-3 bg-gray-100 rounded-lg text-gray-600 text-sm font-medium">+91</span>
+                <span className="flex items-center px-3 bg-sand rounded-lg text-muted text-sm font-medium">+91</span>
                 <input
                   type="tel"
                   required
                   value={phone}
                   onChange={(e) => handlePhoneChange(e.target.value)}
-                  className={`flex-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                    phoneError ? 'border-red-400' : 'border-gray-300'
+                  className={`flex-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent ${
+                    phoneError ? 'border-red-400' : 'border-line'
                   }`}
                   placeholder="10-digit number"
                   maxLength={10}
@@ -260,7 +260,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
 
             {/* Notes */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-ink mb-2">
                 <FileText size={16} className="inline mr-2" />
                 Special Instructions (Optional)
               </label>
@@ -268,7 +268,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 maxLength={1000}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-line rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent"
                 placeholder="Any special requests?"
                 rows={2}
               />
@@ -276,14 +276,14 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
 
             {/* Payment Method */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">Payment Method</label>
+              <label className="block text-sm font-semibold text-ink mb-3">Payment Method</label>
               <div className="flex gap-3">
-                <div className="flex-1 p-4 rounded-lg border-2 border-orange-500 bg-orange-50 text-center">
-                  <p className="text-sm font-semibold text-gray-800">Cash on Delivery</p>
+                <div className="flex-1 p-4 rounded-lg border-2 border-brand bg-brand-soft text-center">
+                  <p className="text-sm font-semibold text-ink">Cash on Delivery</p>
                 </div>
-                <div className="flex-1 p-4 rounded-lg border-2 border-gray-200 bg-gray-50 text-center opacity-50">
-                  <p className="text-sm font-semibold text-gray-400">UPI</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Coming soon</p>
+                <div className="flex-1 p-4 rounded-lg border-2 border-line bg-cream text-center opacity-50">
+                  <p className="text-sm font-semibold text-muted">UPI</p>
+                  <p className="text-xs text-muted mt-0.5">Coming soon</p>
                 </div>
               </div>
             </div>
@@ -292,7 +292,7 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
             <button
               type="submit"
               disabled={isSubmitting || !address.trim() || phone.length !== 10 || (showNewAddress && !isPincodeValid)}
-              className="w-full bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white py-4 rounded-lg font-bold text-lg transition-colors shadow-lg"
+              className="w-full bg-brand hover:bg-brand-hover disabled:bg-brand/40 text-white py-4 rounded-lg font-bold text-lg transition-colors shadow-lg"
             >
               {isSubmitting ? 'Placing Order...' : `Place Order - ₹${total % 1 === 0 ? total.toFixed(0) : total.toFixed(2)}`}
             </button>
