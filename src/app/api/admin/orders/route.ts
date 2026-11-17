@@ -1,40 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const ADMIN_EMAILS = ['satyasharma397@gmail.com'];
+import { guardAdmin, getServiceClient } from '@/lib/admin';
 
 // Statuses the admin page can set (forward, back one step, or reject).
 const ALLOWED_STATUSES = ['pending', 'accepted', 'delivered', 'rejected'];
 
-function getServiceClient() {
-  return createClient(
-    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
-
-async function verifyAdmin(request: NextRequest): Promise<string | null> {
-  // Get the user's session token from the cookie/header
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader) return null;
-
-  const token = authHeader.replace('Bearer ', '');
-  const userClient = createClient(
-    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
-  const { data: { user } } = await userClient.auth.getUser(token);
-  if (!user?.email || !ADMIN_EMAILS.includes(user.email)) return null;
-  return user.email;
-}
-
 // GET: Fetch all orders
 export async function GET(request: NextRequest) {
-  const admin = await verifyAdmin(request);
-  if (!admin) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const guard = await guardAdmin(request);
+  if (guard.response) return guard.response;
 
   const supabase = getServiceClient();
   const url = new URL(request.url);
@@ -73,10 +46,8 @@ export async function GET(request: NextRequest) {
 
 // PATCH: Update order status
 export async function PATCH(request: NextRequest) {
-  const admin = await verifyAdmin(request);
-  if (!admin) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const guard = await guardAdmin(request);
+  if (guard.response) return guard.response;
 
   let body: { orderId?: unknown; status?: unknown };
   try {

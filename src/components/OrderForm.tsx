@@ -486,12 +486,11 @@ export default function OrderForm({ isOpen, onClose, cart, profile, savedAddress
             <div>
               <label className="block text-sm font-semibold text-ink mb-3">Payment Method</label>
               <div className="flex gap-3">
-                <div className="flex-1 p-4 rounded-lg border-2 border-brand bg-brand-soft text-center">
+                <div className="flex-1 p-4 rounded-lg border-2 border-brand bg-brand-soft flex items-center justify-center text-center">
                   <p className="text-sm font-semibold text-ink">Cash on Delivery</p>
                 </div>
-                <div className="flex-1 p-4 rounded-lg border-2 border-line bg-cream text-center opacity-50">
-                  <p className="text-sm font-semibold text-muted">UPI</p>
-                  <p className="text-xs text-muted mt-0.5">Coming soon</p>
+                <div className="flex-1 p-4 rounded-lg border-2 border-line bg-cream opacity-50 flex items-center justify-center text-center">
+                  <p className="text-sm font-semibold text-muted">UPI · Coming soon</p>
                 </div>
               </div>
             </div>
